@@ -1,47 +1,76 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(lebron2016x4)
 
-# Make sure developers do not run cmake in the main project directory, to keep
-# build artifacts from becoming clutter
+# Prevent in-source builds
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-    message(FATAL_ERROR "In-source builds not allowed.
-    Please make a new directory (called a build directory) and run CMake from there.
-    You may need to remove CMakeCache.txt." )
+    message(FATAL_ERROR "In-source builds not allowed.\n"
+        "Please make a new directory (called a build directory) and run CMake from there.\n"
+        "You may need to remove CMakeCache.txt.")
 endif()
 
-# Turn on debug builds if we are building in a devel shell
+# Default to Debug in devel shell
 if (CMAKE_BUILD_TYPE STREQUAL "" AND "$ENV{DEVEL_SHELL}" STREQUAL "1")
     message(STATUS "Setting debug build type by default in devel shell")
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-# Output binaries to a sub directory "bin"
+# Output binaries to bin/
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Enable cmake testing
+# Enable testing
 include(CTest)
 enable_testing()
 
-# Enable GoogleTest
+# GoogleTest (optional)
 include(GoogleTest)
 add_subdirectory(/usr/src/googletest googletest)
 
-# Enable Boost
-# Use static libraries so binaries can be deployed without a full boost install
+# Boost (static)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.50 REQUIRED COMPONENTS system)
 message(STATUS "Boost version: ${Boost_VERSION}")
 
-include_directories(include)
+# === Echo Server Library ===
+# Build a static library from session and server implementations
+add_library(echoserver_lib
+  src/session.cc
+  src/server.cc
+)
 
-# Update name and srcs -> No libraries yet, so we can ignore this for now.
-# add_library(example_lib src/example_lib.cc)
+# Make include/ available for the library
+target_include_directories(echoserver_lib
+  PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
 
-# Update executable name, srcs, and deps
-add_executable(server src/server_main.cc)
-target_compile_definitions(server PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS) # This was put in place to get rid of the Boost warning for the target linking requiring 3 parameters. But boost is a header only library so we don't need to include one in add_library
-target_link_libraries(server Boost::system)
+# Workaround for Boost.Bind placeholder warning
+target_compile_definitions(echoserver_lib
+  PRIVATE
+    BOOST_BIND_GLOBAL_PLACEHOLDERS
+)
 
+# Link against Boost.System for Asio
+target_link_libraries(echoserver_lib
+  PUBLIC
+    Boost::system
+)
+
+# === Server Executable ===
+# Build main that links to the library
+add_executable(server
+  src/server_main.cc
+)
+
+target_include_directories(server
+  PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+# Link the echo server library into the executable
+target_link_libraries(server
+  PRIVATE
+    echoserver_lib
+)
 
 # IGNORE BELOW FOR NOW:
 # TODO(!): Update test executable name, srcs, and deps
