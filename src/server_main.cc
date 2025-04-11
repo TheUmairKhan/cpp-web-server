@@ -11,7 +11,20 @@
 #include <cstdlib>
 #include <iostream>
 #include <boost/asio.hpp>
+#include "config_parser.h"
 #include "server.h"
+
+static bool ExtractPort(const NginxConfig& cfg, unsigned short& port_out) {
+  for (const auto& stmt : cfg.statements_) {
+    if (stmt->tokens_.size() == 2 && stmt->tokens_[0] == "port") {
+      try {
+        port_out = static_cast<unsigned short>(std::stoi(stmt->tokens_[1]));
+      } catch (...) { return false; }
+      return true;
+    }
+  }
+  return false;
+}
 
 int main(int argc, char* argv[]) {
   try {
@@ -19,13 +32,25 @@ int main(int argc, char* argv[]) {
       std::cerr << "Usage: async_tcp_echo_server <port>\n";
       return 1;
     }
+    NginxConfigParser parser;
+    NginxConfig config;
+
+    if (!parser.Parse(argv[1], &config)) {
+      std::cerr << "Config parse error\n";
+      return 1;
+    }
+
+    unsigned short port = 0;
+    if (!ExtractPort(config, port)) {
+      std::cerr << "No valid \"port <num>;\" directive found\n";
+      return 1;
+    }
 
     boost::asio::io_service io_service;
-    short port = static_cast<short>(std::atoi(argv[1]));
-
     server s(io_service, port);
     io_service.run();
   }
+
   catch (const std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";
   }
