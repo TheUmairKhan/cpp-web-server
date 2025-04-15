@@ -60,7 +60,8 @@ void session::handle_write(const boost::system::error_code& error) {
 
 bool session::request_complete() const {
   // Simple heuristic: headers end with a blank line (\r\n\r\n).
-  return in_buf_.find("\r\n\r\n") != std::string::npos;
+  // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
+  return in_buf_.find("\r\n\r\n") != std::string::npos || in_buf_.find("\n\n") != std::string::npos;
 }
 
 void session::make_response() {
