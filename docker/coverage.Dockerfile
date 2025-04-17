@@ -1,4 +1,4 @@
-FROM gcr.io/${PROJECT_ID}/lebron2016x4:base
+FROM gcr.io/lebron2016x4/lebron2016x4:base
 
 WORKDIR /usr/src/projects/lebron2016x4
 
