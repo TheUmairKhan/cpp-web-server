@@ -14,4 +14,4 @@ RUN cd build_coverage && \
     make coverage
 
 # Outputs the coverage summary into build logs when the container runs 
-CMD cat build_coverage/report/index.html | grep -A 15 "Coverage"
+CMD cat build_coverage/report/index.html
