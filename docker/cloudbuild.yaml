@@ -24,3 +24,7 @@ steps:
     '.'
   ]
 images: ['gcr.io/$PROJECT_ID/lebron2016x4:base', 'gcr.io/$PROJECT_ID/lebron2016x4:latest']
+
+options:
+  # Resolves service account logging requirement for Cloud Build Triggers
+  logging: CLOUD_LOGGING_ONLY
