@@ -23,7 +23,17 @@ steps:
     '-t', 'gcr.io/$PROJECT_ID/lebron2016x4:latest',
     '.'
   ]
-images: ['gcr.io/$PROJECT_ID/lebron2016x4:base', 'gcr.io/$PROJECT_ID/lebron2016x4:latest']
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-f', 'docker/coverage.Dockerfile',
+    '-t', 'gcr.io/$PROJECT_ID/lebron2016x4:coverage',
+    '.'
+  ]
+#Run the coverage container and display test results in logs
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['run', 'gcr.io/$PROJECT_ID/lebron2016x4:coverage']
+images: ['gcr.io/$PROJECT_ID/lebron2016x4:base', 'gcr.io/$PROJECT_ID/lebron2016x4:latest', 'gcr.io/$PROJECT_ID/lebron2016x4:coverage']
 
 options:
   # Resolves service account logging requirement for Cloud Build Triggers
