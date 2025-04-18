@@ -62,7 +62,7 @@ target_link_libraries(echoserver_lib
 #  Executable that links the library
 # ─────────────────────────────────────────────────────────────
 add_executable(webserver     # <-- rename from 'server' if you like
-  src/server_main.cc         # (contains the config‑file logic)
+  src/_main.cc         # (contains the config‑file logic)
 )
 
 target_include_directories(webserver
@@ -79,16 +79,18 @@ target_link_libraries(webserver
 # ─────────────────────────────────────────────────────────────
 #  (Tests & coverage placeholders)
 # ─────────────────────────────────────────────────────────────
-add_executable(server_test
+add_executable(unit_tests
   tests/server_test.cc
+  tests/session_test.cc
+  tests/config_parser_test.cc
 )
 
-target_include_directories(server_test
+target_include_directories(unit_tests
   PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_libraries(server_test
+target_link_libraries(unit_tests
   PRIVATE
     echoserver_lib
     gtest_main
@@ -96,9 +98,9 @@ target_link_libraries(server_test
 )
 
 # Let CTest discover and run the tests automatically
-gtest_discover_tests(server_test
+gtest_discover_tests(unit_tests
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
 )
 
 include(cmake/CodeCoverageReportConfig.cmake)
-generate_coverage_report(TARGETS webserver echoserver_lib TESTS server_test)
+generate_coverage_report(TARGETS webserver echoserver_lib TESTS unit_tests)

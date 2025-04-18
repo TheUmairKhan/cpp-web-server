@@ -14,18 +14,6 @@
 #include "config_parser.h"
 #include "server.h"
 
-static bool ExtractPort(const NginxConfig& cfg, unsigned short& port_out) {
-  for (const auto& stmt : cfg.statements_) {
-    if (stmt->tokens_.size() == 2 && stmt->tokens_[0] == "port") {
-      try {
-        port_out = static_cast<unsigned short>(std::stoi(stmt->tokens_[1]));
-      } catch (...) { return false; }
-      return true;
-    }
-  }
-  return false;
-}
-
 int main(int argc, char* argv[]) {
   try {
     if (argc != 2) {
@@ -41,7 +29,7 @@ int main(int argc, char* argv[]) {
     }
 
     unsigned short port = 0;
-    if (!ExtractPort(config, port)) {
+    if (!config.ExtractPort(port)) {
       std::cerr << "No valid \"port <num>;\" directive found\n";
       return 1;
     }

@@ -20,6 +20,11 @@ class NginxConfig {
  public:
   std::string ToString(int depth = 0);
   std::vector<std::shared_ptr<NginxConfigStatement>> statements_;
+
+  // Extracts the port number from the parsed config and stores the port
+  // number in the provided port_out out-param. Returns false if the config
+  // has no/invalid port number directive.
+  bool ExtractPort(unsigned short& port_out);
 };
 
 // The driver that parses a config file and generates an NginxConfig.

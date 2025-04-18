@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "server.h"
-#include "config_parser.h"
 
 using boost::asio::ip::tcp;
 
@@ -60,23 +59,6 @@ protected:
   std::unique_ptr<server> server_;
   std::thread io_thread_;
 };
-
-// ----------------  Config‑parser unit tests  -----------------
-TEST(ConfigParserTest, ValidConfig) {
-  NginxConfigParser p; NginxConfig cfg;
-  std::stringstream ss("port 1234;");
-  ASSERT_TRUE(p.Parse(&ss, &cfg));          //  ← use stream
-  unsigned short port = 0;
-  for (auto& s : cfg.statements_)
-    if (s->tokens_[0] == "port") port = std::stoi(s->tokens_[1]);
-  EXPECT_EQ(port, 1234);
-}
-
-TEST(ConfigParserTest, InvalidConfig) {
-  NginxConfigParser p; NginxConfig cfg;
-  std::stringstream ss("port bad_no_semicolon");
-  EXPECT_FALSE(p.Parse(&ss, &cfg));         //  ← use stream
-}
 
 // ----------------  Echo‑server integration tests  ------------
 

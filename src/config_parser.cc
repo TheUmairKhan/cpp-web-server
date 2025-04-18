@@ -25,6 +25,18 @@ std::string NginxConfig::ToString(int depth) {
   return serialized_config;
 }
 
+bool NginxConfig::ExtractPort(unsigned short& port_out) {
+  for (const auto& stmt : statements_) {
+    if (stmt->tokens_.size() == 2 && stmt->tokens_[0] == "port") {
+      try {
+        port_out = static_cast<unsigned short>(std::stoi(stmt->tokens_[1]));
+      } catch (...) { return false; }
+      return true;
+    }
+  }
+  return false;
+}
+
 std::string NginxConfigStatement::ToString(int depth) {
   std::string serialized_statement;
   for (int i = 0; i < depth; ++i) {
