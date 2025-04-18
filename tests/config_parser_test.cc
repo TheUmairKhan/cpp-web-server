@@ -4,46 +4,8 @@
 
 #include "config_parser.h"
 
-// ----------------  NginxConfig unit tests  ------------
-
-// Fixture for NginxConfig unit tests
-class NginxConfigTest : public testing::Test {
-  protected:
-    NginxConfigParser parser;
-    NginxConfig config;
-    unsigned short port = 0;
-};
-
-// NginxConfig Public API tests
-TEST_F(NginxConfigTest, ExtractPortGoodPortNumber) {
-  std::stringstream ss("port 1234;");
-  ASSERT_TRUE(parser.Parse(&ss, &config));
-  ASSERT_TRUE(config.ExtractPort(port));
-  EXPECT_EQ(port, 1234);
-}
-
-TEST_F(NginxConfigTest, ExtractPortBadPortNumber) {
-  std::stringstream ss("port hello;");
-  ASSERT_TRUE(parser.Parse(&ss, &config));
-  ASSERT_FALSE(config.ExtractPort(port));
-}
-
-TEST_F(NginxConfigTest, ExtractPortNoPortNumber) {
-  std::stringstream ss("port;");
-  ASSERT_TRUE(parser.Parse(&ss, &config));
-  ASSERT_FALSE(config.ExtractPort(port));
-}
-
-TEST_F(NginxConfigTest, ExtractPortBadPortDirective) {
-  std::stringstream ss("part 1234;");
-  ASSERT_TRUE(parser.Parse(&ss, &config));
-  ASSERT_FALSE(config.ExtractPort(port));
-}
-
-// ----------------  NginxConfigParser unit tests  ------------
-
-// Fixture for NginxConfigParser unit tests
-class NginxConfigParserTest : public testing::Test {
+// ----------------  Base Fixture -----------------------
+class ConfigTestBase : public testing::Test {
   protected:
     void TearDown() override {
       std::remove(test_config_path.c_str());
@@ -61,9 +23,79 @@ class NginxConfigParserTest : public testing::Test {
     std::string test_config_path = "/tmp/test_config";
 };
 
+
+// ----------------  NginxConfig unit tests  ------------
+
+// Fixture for NginxConfig unit tests
+class NginxConfigTest : public ConfigTestBase {
+  protected:
+    unsigned short port = 0;
+};
+
+// NginxConfig ExtractPort tests
+TEST_F(NginxConfigTest, ExtractPortGoodPortNumber) {
+  WriteConfig(R"(
+    port 1234;
+  )");
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  ASSERT_TRUE(out_config.ExtractPort(port));
+  EXPECT_EQ(port, 1234);
+}
+
+TEST_F(NginxConfigTest, ExtractPortBadPortNumber) {
+  WriteConfig(R"(
+    port hello;
+  )");
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractPort(port));
+}
+
+TEST_F(NginxConfigTest, ExtractPortNoPortNumber) {
+  WriteConfig(R"(
+    port;
+  )");
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractPort(port));
+}
+
+TEST_F(NginxConfigTest, ExtractPortBadPortDirective) {
+  WriteConfig(R"(
+    part 1234;
+  )");
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractPort(port));
+}
+
+// NginxConfig ToString tests
+TEST_F(NginxConfigTest, ToString) {
+  std::string config_text = "port 80;\nserver {\n  listen 80;\n}\n";
+  WriteConfig(config_text);
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_EQ(out_config.ToString(), config_text);
+}
+
+TEST_F(NginxConfigTest, ToStringWithDepth) {
+  std::string config_text = "  port 80;\n  server {\n    listen 80;\n  }\n";
+  WriteConfig(config_text);
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_EQ(out_config.ToString(1), config_text);
+}
+
+
+// ----------------  NginxConfigParser unit tests  ------------
+
+// Fixture for NginxConfigParser unit tests
+class NginxConfigParserTest : public ConfigTestBase {};
+
 // Bad Config File unit tests
 TEST_F(NginxConfigParserTest, BadConfigFile) {
   bool success = parser.Parse("does_not_exist", &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, EmptyConfigFile) {
+  WriteConfig("");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
   EXPECT_FALSE(success);
 }
 
@@ -76,9 +108,25 @@ TEST_F(NginxConfigParserTest, DoubleQuote) {
   EXPECT_TRUE(success);
 }
 
-TEST_F(NginxConfigParserTest, BadDoubleQuote) {
+TEST_F(NginxConfigParserTest, BadDoubleQuoteNoSpaceAfter) {
   WriteConfig(R"(
     server_name "hello".com;
+  )");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, BadDoubleQuoteNotClosed) {
+  WriteConfig(R"(
+    server_name "hello.com;
+  )");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, BadDoubleQuoteEndOfFile) {
+  WriteConfig(R"(
+    server_name "hello.com
   )");
   bool success = parser.Parse(test_config_path.c_str(), &out_config);
   EXPECT_FALSE(success);
@@ -96,6 +144,12 @@ TEST_F(NginxConfigParserTest, BadDoubleQuoteEscape) {
   WriteConfig(R"(
     user "Lebron "King" James";
   )");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, BadDoubleQuoteEscapeEndOfFile) {
+  WriteConfig(R"(user "Lebron \"King\" James\)");
   bool success = parser.Parse(test_config_path.c_str(), &out_config);
   EXPECT_FALSE(success);
 }
@@ -162,6 +216,28 @@ TEST_F(NginxConfigParserTest, DoubleBracket) {
     server {{
       listen   80;
       root /home/ubuntu/sites/foo/;
+    }
+  )");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, BadBlock) {
+  WriteConfig(R"(
+    {
+      listen   80;
+      root /home/ubuntu/sites/foo/;
+    }
+  )");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
+TEST_F(NginxConfigParserTest, MissingBlockSemicolon) {
+  WriteConfig(R"(
+    server {
+      listen   80;
+      root /home/ubuntu/sites/foo/
     }
   )");
   bool success = parser.Parse(test_config_path.c_str(), &out_config);

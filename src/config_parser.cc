@@ -17,6 +17,8 @@
 
 #include "config_parser.h"
 
+NginxConfigParser::NginxConfigParser() {}
+
 std::string NginxConfig::ToString(int depth) {
   std::string serialized_config;
   for (const auto& statement : statements_) {
