@@ -1,4 +1,3 @@
-// tests/echo_server_test.cc
 #include <gtest/gtest.h>
 #include <boost/asio.hpp>
 #include <thread>
@@ -30,7 +29,7 @@ protected:
     cfg_path_ = MakeTempConfig(port_);
 
     // start server
-    server_ = std::make_unique<server>(io_, port_);
+    server_ = std::make_unique<server>(io_, port_, session::MakeSession);
     io_thread_ = std::thread([this]{ io_.run(); });
   }
 
@@ -285,3 +284,5 @@ TEST_F(EchoServerFixture, LargeChunkedWriteRequest) {
   EXPECT_EQ(body, request_full)
       << "The server's echo did not match the original request content";
 }
+
+// -------------------server unit tests-------------------

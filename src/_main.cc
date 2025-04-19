@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include "config_parser.h"
 #include "server.h"
+//#include "session.h"
 
 int main(int argc, char* argv[]) {
   try {
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
     }
 
     boost::asio::io_service io_service;
-    server s(io_service, port);
+    server s(io_service, port, session::MakeSession);
     io_service.run();
   }
 

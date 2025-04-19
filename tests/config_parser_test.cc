@@ -195,6 +195,12 @@ TEST_F(NginxConfigParserTest, BadSingleQuoteEscape) {
   EXPECT_FALSE(success);
 }
 
+TEST_F(NginxConfigParserTest, BadSingleQuoteEscapeEndOfFile) {
+  WriteConfig(R"(user 'Lebron \'King\' James\)");
+  bool success = parser.Parse(test_config_path.c_str(), &out_config);
+  EXPECT_FALSE(success);
+}
+
 // Bracket Tests
 TEST_F(NginxConfigParserTest, NestedDirective) {
   WriteConfig(R"(
