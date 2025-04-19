@@ -104,3 +104,10 @@ gtest_discover_tests(unit_tests
 
 include(cmake/CodeCoverageReportConfig.cmake)
 generate_coverage_report(TARGETS webserver echoserver_lib TESTS unit_tests)
+
+# Python Integration Test
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(
+  NAME integration_test
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/integration_test.py
+)
