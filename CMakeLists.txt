@@ -41,6 +41,7 @@ add_library(echoserver_lib
   src/session.cc
   src/server.cc
   src/config_parser.cc
+  src/http_responder.cc
 )
 
 target_include_directories(echoserver_lib
