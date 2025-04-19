@@ -35,6 +35,3 @@ steps:
   args: ['run', 'gcr.io/$PROJECT_ID/lebron2016x4:coverage']
 images: ['gcr.io/$PROJECT_ID/lebron2016x4:base', 'gcr.io/$PROJECT_ID/lebron2016x4:latest', 'gcr.io/$PROJECT_ID/lebron2016x4:coverage']
 
-options:
-  # Resolves service account logging requirement for Cloud Build Triggers
-  logging: CLOUD_LOGGING_ONLY
