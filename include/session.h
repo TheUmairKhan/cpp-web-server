@@ -9,14 +9,15 @@ public:
   static session* MakeSession(boost::asio::io_service& io_service);
 
   // Accessor for the underlying socket
-  boost::asio::ip::tcp::socket& socket();
+  virtual boost::asio::ip::tcp::socket& socket();
 
   // Start asynchronous read loop
-  void start();
+  virtual void start();
 
-private:
+protected:
   explicit session(boost::asio::io_service& io_service);
 
+private:
   // Handlers for read/write
   void handle_read(const boost::system::error_code& error,
                    std::size_t bytes_transferred);

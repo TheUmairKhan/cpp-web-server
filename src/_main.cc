@@ -13,7 +13,6 @@
 #include <boost/asio.hpp>
 #include "config_parser.h"
 #include "server.h"
-//#include "session.h"
 
 int main(int argc, char* argv[]) {
   try {
