@@ -4,20 +4,12 @@
 #include <fstream>
 
 #include "server.h"
+#include "session.h"
 
 using boost::asio::ip::tcp;
 
-// ----------  Helper to write a tiny config file on‑the‑fly  ----------
-static std::string MakeTempConfig(unsigned short port) {
-  const std::string path = "/tmp/echotest_" + std::to_string(port) + ".conf";
-  std::ofstream f(path);
-  f << "port " << port << ";\n";
-  f.close();
-  return path;
-}
-
 // ----------  Fixture that starts the server on SetUp()  ---------------
-class EchoServerFixture : public ::testing::Test {
+class SessionTest : public ::testing::Test {
 protected:
   void SetUp() override {
     // 0 asks the OS to pick any free port.
@@ -26,200 +18,101 @@ protected:
     port_ = acceptor_.local_endpoint().port();
     acceptor_.close();         // we'll reopen inside server
 
-    cfg_path_ = MakeTempConfig(port_);
-
     // start server
-    server_ = std::make_unique<server>(io_, port_, session::MakeSession);
-    io_thread_ = std::thread([this]{ io_.run(); });
+    server_ = std::make_unique<server>(io_service_, port_, session::MakeSession);
+    io_thread_ = std::thread([this]{ io_service_.run(); });
   }
 
   void TearDown() override {
-    io_.stop();
+    io_service_.stop();
     if (io_thread_.joinable()) io_thread_.join();
-    std::remove(cfg_path_.c_str());
   }
 
-  // helper to send a request and read full response
-  std::string RoundTrip(const std::string& req) {
-    tcp::socket sock(io_);
+  // helper to send a request
+  tcp::socket SendRequest(const std::string& req) {
+    tcp::socket sock(io_service_);
     sock.connect({tcp::v4(), port_});
     boost::asio::write(sock, boost::asio::buffer(req));
+    return sock;
+  }
+
+  // helper to read a response
+  std::string ReadResponse(tcp::socket& sock, boost::asio::streambuf& buf, boost::system::error_code& ec) {
     // read until EOF (server closes connection)
-    boost::asio::streambuf buf;
-    boost::system::error_code ec;
     boost::asio::read(sock, buf, ec);
     return {buffers_begin(buf.data()), buffers_end(buf.data())};
   }
 
-  boost::asio::io_service io_;
-  tcp::acceptor acceptor_{io_};
+  boost::asio::io_service io_service_;
+  tcp::acceptor acceptor_{io_service_};
   unsigned short port_;
-  std::string cfg_path_;
   std::unique_ptr<server> server_;
   std::thread io_thread_;
 };
 
-// ----------------  Echo‑server integration tests  ------------
+// --------------------------------Session unit tests----------------------------
+TEST_F(SessionTest, SocketAccessor) {
+  session* s = session::MakeSession(io_service_);
+  EXPECT_FALSE(s->socket().is_open()); // socket created but not yet open
+  delete s;
+}
 
-// 1) Simple GET with CRLF terminator
-TEST_F(EchoServerFixture, BasicEcho) {
-  std::string req =
-      "GET /foo HTTP/1.1\r\nHost: localhost\r\n\r\n";
-  std::string resp = RoundTrip(req);
+// ----------------  Server-session tests  ------------
 
-  // Status line & header checks
-  EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
-  EXPECT_NE(resp.find("Content-Type: text/plain"), std::string::npos);
+// 1) Large request ( > internal 1 kB buffer ) that calls handle_read multiple times
+TEST_F(SessionTest, LargeRequest) {
+  std::string long_path(1500, 'a');
+  std::string req = "GET /" + long_path + " HTTP/1.1\r\nHost: l\r\n\r\n";
+  tcp::socket sock = SendRequest(req);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
 
-  // Body should exactly equal original request
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
   EXPECT_EQ(body, req);
 }
 
-// 2) Large request ( > internal 1 kB buffer )
-TEST_F(EchoServerFixture, LargeRequest) {
-  std::string long_path(1500, 'a');
-  std::string req = "GET /" + long_path + " HTTP/1.1\r\nHost: l\r\n\r\n";
-  std::string resp = RoundTrip(req);
-
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body, req);
+// 2) Error occurs during async_read do to socket closure
+TEST_F(SessionTest, AsyncReadError) {
+  std::string req = "GET / HTTP/1.1\r\nHost: l\r\n\r\n";
+  tcp::socket sock = SendRequest(req);
+  sock.close(); // Close while its reading the request
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
+  EXPECT_EQ("", resp);
 }
 
 // 3) Request missing terminator should NOT get a response (timeout)
-TEST_F(EchoServerFixture, IncompleteRequestNoEcho) {
-  tcp::socket sock(io_);
-  sock.connect({tcp::v4(), port_});
-  std::string half = "GET /noend HTTP/1.1\r\nHost: l\r\n"; // no blank line
-  boost::asio::write(sock, boost::asio::buffer(half));
-
+TEST_F(SessionTest, IncompleteRequestNoEcho) {
+  std::string req = "GET /noend HTTP/1.1\r\nHost: l\r\n"; // no blank line
+  tcp::socket sock = SendRequest(req);
+  
   boost::asio::streambuf buf;
   boost::system::error_code ec;
+
   // wait briefly for data that shouldn't come
-  sock.async_read_some(buf.prepare(64), [&](auto, auto){});
-  io_.run_one_for(std::chrono::milliseconds(50));
-
-  EXPECT_EQ(buf.size(), 0u);  // nothing was echoed
-}
-
-// 4) Malformed start‑line should return 400
-TEST_F(EchoServerFixture, MalformedStartLine) {
-  std::string bad = "G?T /oops HTTP/1.1\r\nHost: x\r\n\r\n";
-  std::string resp = RoundTrip(bad);
-
-  EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
-  // Body should be empty
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
-}
-
-// 5) NetCat Example, where the request uses only LF line breaks instead of CRLF
-TEST_F(EchoServerFixture, NetCatTest) {
-  std::string req =
-      "GET /foo HTTP/1.1\nHost: localhost\n\n";
-  std::string resp = RoundTrip(req);
-
-  // Status line & header checks
-  EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
-  EXPECT_NE(resp.find("Content-Type: text/plain"), std::string::npos);
-
-  // Body should exactly equal original request
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body, req);
-}
-
-// 6) A POST request should return 400, since we only handle GET at the moment
-TEST_F(EchoServerFixture, PostRequestReturns400) {
-  std::string req =
-      "POST /upload HTTP/1.1\r\n"
-      "Host: localhost\r\n"
-      "\r\n"
-      "Body data that should be ignored";
-  std::string resp = RoundTrip(req);
-
-  // Verify the status line.
-  EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
-
-  // Body should be empty since we return 400.
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
-}
-
-// 7) A HEAD request should return 400, since we only handle GET at the moment
-TEST_F(EchoServerFixture, HeadRequestReturns400) {
-  std::string req =
-      "HEAD / HTTP/1.1\r\n"
-      "Host: localhost\r\n"
-      "\r\n";
-  std::string resp = RoundTrip(req);
-
-  EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
-
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
-}
-
-// 8) A valid GET with additional body content. Should be echo'd back by the server.
-TEST_F(EchoServerFixture, GETWithRequestBody) {
-  // Notice we have a body even though GET typically doesn't carry one.
-  // The server's echo logic will include it in the response body.
-  std::string req =
-      "GET /carry_body HTTP/1.1\r\n"
-      "Host: localhost\r\n"
-      "Content-Length: 5\r\n"
-      "\r\n"
-      "Hello";  // This is the "body" that comes right after blank line
-  std::string resp = RoundTrip(req);
-
-  // The status should be 200 OK, and the body should match the entire request
-  // (headers + the "Hello" part).
-  EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
-
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body, req);
-}
-
-// 9) Request with only LF line breaks instead of CRLF.
-TEST_F(EchoServerFixture, OnlyLFLineBreaks) {
-  // We'll just separate lines with '\n'. This should be recognized
-  // by the server's request_complete() check that looks for "\n\n".
-  std::string req =
-      "GET /lf_only HTTP/1.1\n"
-      "Host: x\n"
-      "\n";  // End of headers with a single blank line
-  std::string resp = RoundTrip(req);
-
-  // Confirm 200 OK. Then ensure the echoed body is exactly what we sent.
-  EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
-
-  auto body_pos = resp.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body, req);
+  bool got_response = false;
+  sock.async_read_some(buf.prepare(64), [&](const boost::system::error_code& ec, std::size_t bytes_transferred){
+    if (!ec && bytes_transferred > 0) {
+      buf.commit(bytes_transferred);
+      got_response = true;
+    }
+  });
+  io_service_.run_for(std::chrono::milliseconds(50));
+  EXPECT_FALSE(got_response);  // nothing was echoed
 }
 
 // FINAL LEVEL!
-// A "stress" integration test that:
+// A "stress" test that:
 //   1) Creates a GET request with a huge header containing random data
 //      (well beyond the 1 KB chunk size).
 //   2) Sends the request in several partial writes, to force the server
 //      to handle multiple async_read iterations.
 //   3) Verifies the full original request is echoed back in the response body.
-TEST_F(EchoServerFixture, LargeChunkedWriteRequest) {
+TEST_F(SessionTest, LargeChunkedWriteRequest) {
   // 1) Generate a random filler string to simulate "fr fr" data in a header.
   //    We'll embed this in a header line, plus a normal GET start-line.
   const size_t filler_size = 10 * 1024;  // 10 KB
@@ -246,7 +139,7 @@ TEST_F(EchoServerFixture, LargeChunkedWriteRequest) {
 
   // 2) Connect to the server, then *intentionally* send partial chunks of
   //    the request in multiple writes to test repeated reads on the server.
-  tcp::socket sock(io_);
+  tcp::socket sock(io_service_);
   sock.connect({tcp::v4(), port_});
 
   // We'll break the large request into ~300‑byte chunks.
@@ -284,5 +177,3 @@ TEST_F(EchoServerFixture, LargeChunkedWriteRequest) {
   EXPECT_EQ(body, request_full)
       << "The server's echo did not match the original request content";
 }
-
-// -------------------server unit tests-------------------

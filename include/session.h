@@ -23,10 +23,6 @@ private:
                    std::size_t bytes_transferred);
   void handle_write(const boost::system::error_code& error);
 
-  // // HTTP helpers
-  // bool request_complete() const;   // have we seen "\r\n\r\n" ?
-  // void make_response();            // build HTTP/1.1 200 OK echo  
-
   boost::asio::ip::tcp::socket socket_;
   
   std::string in_buf_;   // accumulates incoming requests
