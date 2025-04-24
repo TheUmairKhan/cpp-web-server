@@ -55,7 +55,7 @@ TEST_F(RequestTest, BadRequestNoVersion) {
   request = std::make_unique<Request>(req);
 
   // Check fields
-  ASSERT_FALSE(request->is_valid());
+  EXPECT_FALSE(request->is_valid());
 }
 
 TEST_F(RequestTest, BadRequestBadHeader) {
@@ -63,7 +63,16 @@ TEST_F(RequestTest, BadRequestBadHeader) {
   request = std::make_unique<Request>(req);
 
   // Check fields
-  ASSERT_FALSE(request->is_valid());
+  EXPECT_FALSE(request->is_valid());
+}
+
+TEST_F(RequestTest, GoodRequestWrongHeader) {
+  req = "GET /foo HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Try get_header with bad header
+  // Should return empty string
+  EXPECT_EQ(request->get_header("Bad"), "");
 }
 
 TEST_F(RequestTest, GoodRequestEmptyHeader) {

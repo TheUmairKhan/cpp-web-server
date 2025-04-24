@@ -1,6 +1,7 @@
 #include "session.h"
 #include "request.h"
 #include "echo_handler.h"
+#include "static_handler.h"
 
 #include <boost/bind.hpp>
 #include <string>
@@ -51,14 +52,19 @@ void session::handle_read(const boost::system::error_code& error,
   // Create Request object
   Request request(in_buf_);
 
-  // Build the HTTP response into out_buf_.
-  std::unique_ptr<RequestHandler> handler = std::make_unique<EchoHandler>();
-  handler->handle_request(request, out_buf_);
+  // Decide what handler to use
+  // For now, everything defaults to echo except for /static
+  std::unique_ptr<RequestHandler> handler;
+  if (request.get_url().rfind("/static", 0) == 0) handler = std::make_unique<StaticHandler>();
+  else handler = std::make_unique<EchoHandler>();
+  // Build the HTTP response
+  Response response = handler->handle_request(request);
+
 
   // Write the entire response back to the client.
   boost::asio::async_write(
       socket_,
-      boost::asio::buffer(out_buf_),
+      boost::asio::buffer(response.to_string()),
       boost::bind(&session::handle_write, this,
                   boost::asio::placeholders::error));
 }
@@ -67,9 +73,3 @@ void session::handle_write(const boost::system::error_code& error) {
   // We’re done with this connection—close it either way.
   delete this;
 }
-
-// bool session::request_complete() const {
-//   // Simple heuristic: headers end with a blank line (\r\n\r\n).
-//   // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
-//   return in_buf_.find("\r\n\r\n") != std::string::npos || in_buf_.find("\n\n") != std::string::npos;
-// }

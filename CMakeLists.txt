@@ -42,7 +42,9 @@ add_library(echoserver_lib
   src/server.cc
   src/config_parser.cc
   src/request.cc
+  src/response.cc
   src/echo_handler.cc
+  src/static_handler.cc
 )
 
 target_include_directories(echoserver_lib

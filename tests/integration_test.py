@@ -80,10 +80,11 @@ def echo_200(port: int) -> str:
 
 BAD_REQUEST_400 = textwrap.dedent("""\
     HTTP/1.1 400 Bad Request
-    Content-Length: 0
+    Content-Type: text/plain
+    Content-Length: 11
     Connection: close
 
-""").replace("\r\n", "\n")
+    Bad Request""").replace("\r\n", "\n")
 
 # -----------------------------------------------------------------------------
 # Dataclass describes one test scenario; keeps main() readable

@@ -28,7 +28,6 @@ private:
   boost::asio::ip::tcp::socket socket_;
   
   std::string in_buf_;   // accumulates incoming requests
-  std::string out_buf_;  // full HTTP response we'll send back
 
   // 1KB scratch buffer. Fine for echo server, but maybe reconsider sizing for future assignments
   enum { max_length = 1024 };

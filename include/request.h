@@ -40,7 +40,7 @@ class Request {
     std::string method_;
     std::string url_;
     std::string http_version_;
-    std::unordered_map<std::string, std::string> headers;
+    std::unordered_map<std::string, std::string> headers_;
     std::string raw_text_;
     bool valid_request_;
     int length_;

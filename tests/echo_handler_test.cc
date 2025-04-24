@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "echo_handler.h"
 #include "request.h"
+#include "response.h"
 
 // ----------  EchoHandlerTest Fixture  ---------------
 class EchoHandlerTest : public ::testing::Test {
@@ -16,7 +17,8 @@ class EchoHandlerTest : public ::testing::Test {
 TEST_F(EchoHandlerTest, BasicEcho) {
   req = "GET /foo HTTP/1.1\r\nHost: localhost\r\n\r\n";
   Request request(req);
-  handler->handle_request(request, resp);
+  Response response = handler->handle_request(request);
+  resp = response.to_string();
 
   // Status line & header checks
   EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
@@ -33,21 +35,23 @@ TEST_F(EchoHandlerTest, BasicEcho) {
 TEST_F(EchoHandlerTest, MalformedStartLine) {
   req = "G?T /oops HTTP/1.1\r\nHost: x\r\n\r\n";
   Request request(req);
-  handler->handle_request(request, resp);
+  Response response = handler->handle_request(request);
+  resp = response.to_string();
 
   EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
-  // Body should be empty
+  // Body should say Bad Request
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
+  EXPECT_EQ(body, "Bad Request");
 }
 
 // 3) Request uses only LF line breaks instead of CRLF
 TEST_F(EchoHandlerTest, LFTest) {
   req = "GET /foo HTTP/1.1\nHost: localhost\n\n";
   Request request(req);
-  handler->handle_request(request, resp);
+  Response response = handler->handle_request(request);
+  resp = response.to_string();
 
   // Status line & header checks
   EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
@@ -68,16 +72,17 @@ TEST_F(EchoHandlerTest, PostRequestReturns400) {
       "\r\n"
       "Body data that should be ignored";
   Request request(req);
-  handler->handle_request(request, resp);
+  Response response = handler->handle_request(request);
+  resp = response.to_string();
 
   // Verify the status line.
   EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
 
-  // Body should be empty since we return 400.
+  // Body should say Bad Request
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
+  EXPECT_EQ(body, "Bad Request");
 }
 
 // 5) A HEAD request should return 400, since we only handle GET at the moment
@@ -87,14 +92,16 @@ TEST_F(EchoHandlerTest, HeadRequestReturns400) {
       "Host: localhost\r\n"
       "\r\n";
   Request request(req);
-  handler->handle_request(request, resp);
+  Response response = handler->handle_request(request);
+  resp = response.to_string();
 
   EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
 
+  // Body should say Bad Request
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_TRUE(body.empty());
+  EXPECT_EQ(body, "Bad Request");
 }
 
 // Does not work anymore due to Request class ending request at \r\n\r\n

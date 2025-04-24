@@ -41,8 +41,8 @@ Request::Request(const std::string& request) {
     if (split == std::string::npos) { valid_request_ = false; return; }
     std::string header_name = line.substr(0, split);
     // if header value is empty after colon, i.e "" or " ", value set to empty string
-    if (split + 2 >= line.length()) { headers[header_name] = ""; continue; }
-    headers[header_name] = line.substr(split + 2); // Don't include space following colon
+    if (split + 2 >= line.length()) { headers_[header_name] = ""; continue; }
+    headers_[header_name] = line.substr(split + 2); // Don't include space following colon
   }
   raw_text_ = request;
   length_ = request.length();
@@ -56,9 +56,9 @@ std::string Request::get_url() const { return url_; }
 std::string Request::get_version() const { return http_version_; }
 
 std::string Request::get_header(const std::string& header_name) const { 
-    auto it = headers.find(header_name);
-    if (it == headers.end()) return "";
-    return it->second; 
+    if (headers_.find(header_name) != headers_.end())
+      return headers_.at(header_name);
+    return "";
 }
 
 std::string Request::to_string() const { return raw_text_; }
