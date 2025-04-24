@@ -5,7 +5,7 @@
 
 class StaticHandler : public RequestHandler {
   public:
-    void handle_request(const std::string& request, std::string& response) override;
+    void handle_request(const Request& request, std::string& response) override;
 };
     
 #endif // STATIC_HANDLER_H

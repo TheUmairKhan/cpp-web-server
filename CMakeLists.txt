@@ -41,6 +41,7 @@ add_library(echoserver_lib
   src/session.cc
   src/server.cc
   src/config_parser.cc
+  src/request.cc
   src/echo_handler.cc
 )
 
@@ -84,6 +85,7 @@ add_executable(unit_tests
   tests/server_test.cc
   tests/session_test.cc
   tests/config_parser_test.cc
+  tests/request_test.cc
   tests/echo_handler_test.cc
 )
 

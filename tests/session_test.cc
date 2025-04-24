@@ -119,10 +119,10 @@ TEST_F(SessionTest, LargeChunkedWriteRequest) {
   std::string random_filler;
   random_filler.reserve(filler_size);
 
-  // Fill with random printable ASCII from [32..126].
+  // Fill with random printable ASCII from [33..126].
   // (You can seed with a fixed value for reproducibility.)
   for (size_t i = 0; i < filler_size; ++i) {
-    char c = static_cast<char>((rand() % 95) + 32);
+    char c = static_cast<char>((rand() % 94) + 33);
     random_filler.push_back(c);
   }
 

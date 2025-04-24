@@ -5,7 +5,7 @@
 
 class EchoHandler : public RequestHandler {
   public:
-    void handle_request(const std::string& request, std::string& response) override;
+    void handle_request(const Request& request, std::string& response) override;
 };
     
 #endif // ECHO_HANDLER_H

@@ -1,4 +1,5 @@
 #include "session.h"
+#include "request.h"
 #include "echo_handler.h"
 
 #include <boost/bind.hpp>
@@ -38,7 +39,7 @@ void session::handle_read(const boost::system::error_code& error,
   in_buf_.append(chunk_, bytes_transferred);
 
   // Keep reading until we detect the end of the HTTP headers.
-  if (!request_complete()) {
+  if (!request_complete(in_buf_)) {
     socket_.async_read_some(
         boost::asio::buffer(chunk_, max_length),
         boost::bind(&session::handle_read, this,
@@ -47,9 +48,12 @@ void session::handle_read(const boost::system::error_code& error,
     return;
   }
 
+  // Create Request object
+  Request request(in_buf_);
+
   // Build the HTTP response into out_buf_.
   std::unique_ptr<RequestHandler> handler = std::make_unique<EchoHandler>();
-  handler->handle_request(in_buf_, out_buf_);
+  handler->handle_request(request, out_buf_);
 
   // Write the entire response back to the client.
   boost::asio::async_write(
@@ -64,8 +68,8 @@ void session::handle_write(const boost::system::error_code& error) {
   delete this;
 }
 
-bool session::request_complete() const {
-  // Simple heuristic: headers end with a blank line (\r\n\r\n).
-  // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
-  return in_buf_.find("\r\n\r\n") != std::string::npos || in_buf_.find("\n\n") != std::string::npos;
-}
+// bool session::request_complete() const {
+//   // Simple heuristic: headers end with a blank line (\r\n\r\n).
+//   // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
+//   return in_buf_.find("\r\n\r\n") != std::string::npos || in_buf_.find("\n\n") != std::string::npos;
+// }

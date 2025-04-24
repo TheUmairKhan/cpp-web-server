@@ -23,7 +23,7 @@ private:
                    std::size_t bytes_transferred);
   void handle_write(const boost::system::error_code& error);
 
-  bool request_complete() const; // have we seen "\r\n\r\n" ?
+  // bool request_complete() const; // have we seen "\r\n\r\n" ?
 
   boost::asio::ip::tcp::socket socket_;
   
