@@ -6,6 +6,7 @@ Response::Response(const std::string& version,
                    int content_length,
                    std::string connection,
                    std::string body) :
+                   status_code_(status_code),
                    content_type_(content_type),
                    content_length_(content_length),
                    connection_(connection),

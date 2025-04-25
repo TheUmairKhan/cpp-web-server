@@ -31,7 +31,7 @@ add_subdirectory(/usr/src/googletest googletest)
 #  Boost
 # ─────────────────────────────────────────────────────────────
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.50 REQUIRED COMPONENTS system)
+find_package(Boost 1.50 REQUIRED COMPONENTS system log log_setup regex filesystem thread)
 message(STATUS "Boost version: ${Boost_VERSION}")
 
 # ─────────────────────────────────────────────────────────────
@@ -45,6 +45,7 @@ add_library(echoserver_lib
   src/response.cc
   src/echo_handler.cc
   src/static_handler.cc
+  src/logger.cc
 )
 
 target_include_directories(echoserver_lib
@@ -60,6 +61,10 @@ target_compile_definitions(echoserver_lib
 target_link_libraries(echoserver_lib
   PUBLIC                     # expose Boost::system to users of the lib
     Boost::system
+    Boost::log_setup
+    Boost::log
+    Boost::filesystem
+    Boost::thread
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -78,6 +83,8 @@ target_link_libraries(webserver
   PRIVATE
     echoserver_lib           # our library
     Boost::system            # optional explicit link
+    Boost::log_setup
+    Boost::log
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -101,6 +108,8 @@ target_link_libraries(unit_tests
     echoserver_lib
     gtest_main
     Boost::system
+    Boost::log_setup
+    Boost::log
 )
 
 # Let CTest discover and run the tests automatically

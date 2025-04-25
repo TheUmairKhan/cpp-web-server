@@ -16,7 +16,11 @@ class Response {
     // Returns string of response
     std::string to_string();
 
+    // Returns status code
+    int get_status_code() const { return status_code_; }
+
   private:  
+    int status_code_;
     std::string status_line_;
     std::string content_type_;
     int content_length_;

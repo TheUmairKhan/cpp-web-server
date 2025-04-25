@@ -1,4 +1,5 @@
 #include "session.h"
+#include "logger.h"
 #include "request.h"
 #include "echo_handler.h"
 #include "static_handler.h"
@@ -22,6 +23,8 @@ tcp::socket& session::socket() {
 
 void session::start() {
   // Kick off the first asynchronous read.
+  auto ip = Logger::get_client_ip(socket_);
+  Logger::log_connection(ip);
   socket_.async_read_some(
       boost::asio::buffer(chunk_, max_length),
       boost::bind(&session::handle_read, this,
@@ -52,14 +55,39 @@ void session::handle_read(const boost::system::error_code& error,
   // Create Request object
   Request request(in_buf_);
 
-  // Decide what handler to use
-  // For now, everything defaults to echo except for /static
+  //Get client IP
+  auto client_ip = Logger::get_client_ip(socket_);
+
+  //Early 400 on malformed syntax
+  if (!request.is_valid()) {
+    Response bad_response(request.get_version(), 400, "text/plain", /*content len=*/11, "close", "Bad Request"
+      );    
+    Logger::log_request(client_ip, request.get_method(), request.get_url(), 400);
+    boost::asio::async_write(
+      socket_,
+      boost::asio::buffer(bad_response.to_string()),
+      boost::bind(&session::handle_write, this,
+                  boost::asio::placeholders::error));
+    return;
+  }
+
+  // Dispatch to handler
   std::unique_ptr<RequestHandler> handler;
-  if (request.get_url().rfind("/static", 0) == 0) handler = std::make_unique<StaticHandler>();
-  else handler = std::make_unique<EchoHandler>();
-  // Build the HTTP response
+  if (request.get_url().rfind("/static", 0) == 0)
+    handler = std::make_unique<StaticHandler>();
+  else
+    handler = std::make_unique<EchoHandler>();
+
   Response response = handler->handle_request(request);
 
+  // Log actual status code (200, 404, etc.)
+  int code = response.get_status_code();
+  Logger::log_request(
+    client_ip,
+    request.get_method(),
+    request.get_url(),
+    code
+  );
 
   // Write the entire response back to the client.
   boost::asio::async_write(
