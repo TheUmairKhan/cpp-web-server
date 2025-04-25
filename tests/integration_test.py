@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-integration_echo.py — CS 130 Assignment 3
+integration_echo.py — CS 130 Assignment 3
 
-Starts the compiled web‑server exactly once, then runs several request/response
-checks.  Exits non‑zero on the first mismatch so CTest/CI marks the build
+Starts the compiled web-server exactly once, then runs several request/response
+checks.  Exits non-zero on the first mismatch so CTest/CI marks the build
 failed.
 
 NOTE: The server is started once and reused across test cases due to HTTP requests
@@ -20,7 +20,12 @@ from typing import Callable
 # fast if the build step hasn’t produced it.
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-SERVER_BIN = ROOT / "build" / "bin" / "webserver"
+# Fixed error in which we hardcoded the CMake path to only "build" instead of either "build" or "build_coverage"
+for subdir in ("build_coverage", "build"):
+    SERVER_BIN = ROOT / subdir / "bin" / "webserver"
+    if SERVER_BIN.is_file():
+        break
+
 if not SERVER_BIN.is_file():
     sys.exit(f"[integration] binary missing: {SERVER_BIN}")
 
@@ -45,7 +50,7 @@ def wait_until_listening(port: int, timeout: float = 5) -> bool:
     return False
 
 def curl_get(port: int) -> str:
-    """Perform GET / via curl, returning the full response as LF‑terminated text."""
+    """Perform GET / via curl, returning the full response as LF-terminated text."""
     cmd = [
         "curl", "-sS", "-i", f"http://127.0.0.1:{port}/",
         "-H", "Expect:", "-H", "User-Agent:", "-H", "Accept:"
@@ -146,7 +151,7 @@ def main() -> int:
                 if not case.run(port):
                     return 1
 
-            print("✓ all integration cases passed")
+            print("All integration cases passed")
             return 0
 
         finally:
