@@ -2,7 +2,7 @@
 
 Response EchoHandler::handle_request(const Request& request) {
   // 400 Bad request if invalid request or not GET (others not implemented yet)
-  if (!request.is_valid() || request.get_method() != "GET") {
+  if (!request.is_valid() || (request.get_method() != "GET" && request.get_method() != "HEAD")) {
     std::string body = "Bad Request";
     return Response(request.get_version(), 400, "text/plain", body.length(), "close", body);
   }

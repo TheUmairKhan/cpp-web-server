@@ -85,8 +85,8 @@ TEST_F(EchoHandlerTest, PostRequestReturns400) {
   EXPECT_EQ(body, "Bad Request");
 }
 
-// 5) A HEAD request should return 400, since we only handle GET at the moment
-TEST_F(EchoHandlerTest, HeadRequestReturns400) {
+// 5) A HEAD request should return 400, since we only handle GET at the moment (NOT TRUE NO MORE!)
+TEST_F(EchoHandlerTest, HeadRequestReturns200) {
   req =
       "HEAD / HTTP/1.1\r\n"
       "Host: localhost\r\n"
@@ -95,13 +95,13 @@ TEST_F(EchoHandlerTest, HeadRequestReturns400) {
   Response response = handler->handle_request(request);
   resp = response.to_string();
 
-  EXPECT_NE(resp.find("HTTP/1.1 400 Bad Request"), std::string::npos);
+  EXPECT_NE(resp.find("HTTP/1.1 200 OK"), std::string::npos);
 
-  // Body should say Bad Request
+  // Body should exactly equal original request
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body, "Bad Request");
+  EXPECT_EQ(body, req);
 }
 
 // Does not work anymore due to Request class ending request at \r\n\r\n
