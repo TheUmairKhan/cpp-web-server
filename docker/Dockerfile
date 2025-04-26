@@ -18,7 +18,7 @@ FROM ubuntu:noble as deploy
 
 COPY --from=builder /usr/src/project/build/bin/webserver .
 COPY --from=builder /usr/src/project/cloud_config .
-COPY --from=builder /usr/src/project/www .
+COPY --from=builder /usr/src/project/www /var/www
 
 EXPOSE 80
 
