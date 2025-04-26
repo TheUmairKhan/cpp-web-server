@@ -11,10 +11,10 @@ route /echo {
 
 route /static {
     handler static;
-    root /usr/src/projects/lebron2016x4/www/static;
+    root /var/www/static;
 }
 
 route /public {
     handler static;
-    root /usr/src/projects/lebron2016x4/www/static;
+    root /var/www/static;
 }
