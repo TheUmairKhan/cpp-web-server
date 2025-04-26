@@ -45,8 +45,11 @@ add_library(echoserver_lib
   src/response.cc
   src/echo_handler.cc
   src/static_handler.cc
+  src/router.cc          # Add this line
+  src/router_session.cc
   src/logger.cc
 )
+
 
 target_include_directories(echoserver_lib
   PUBLIC                     # headers are part of the public interface
@@ -96,6 +99,7 @@ add_executable(unit_tests
   tests/config_parser_test.cc
   tests/request_test.cc
   tests/echo_handler_test.cc
+  tests/static_handler_test.cc
 )
 
 target_include_directories(unit_tests

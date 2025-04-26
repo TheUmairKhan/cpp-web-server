@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class NginxConfig;
 
@@ -20,6 +21,15 @@ class NginxConfig {
  public:
   std::string ToString(int depth = 0);
   std::vector<std::shared_ptr<NginxConfigStatement>> statements_;
+
+  // Define struct for routing
+  struct RouteConfig {
+    std::string path;
+    std::string handler_type;
+    std::unordered_map<std::string, std::string> params;
+  };
+
+  bool ExtractRoutes(std::vector<RouteConfig>& routes_out);
 
   // Extracts the port number from the parsed config and stores the port
   // number in the provided port_out out-param. Returns false if the config

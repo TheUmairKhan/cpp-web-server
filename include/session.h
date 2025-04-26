@@ -2,36 +2,39 @@
 #define SESSION_H
 
 #include <boost/asio.hpp>
+#include "request.h"  // Add this
 
 class session {
 public:
-  // Session Factory Method
   static session* MakeSession(boost::asio::io_service& io_service);
 
-  // Accessor for the underlying socket
   virtual boost::asio::ip::tcp::socket& socket();
 
-  // Start asynchronous read loop
   virtual void start();
 
 protected:
   explicit session(boost::asio::io_service& io_service);
 
-private:
-  // Handlers for read/write
-  void handle_read(const boost::system::error_code& error,
-                   std::size_t bytes_transferred);
-  void handle_write(const boost::system::error_code& error);
+  // Add this helper function
+  static bool request_complete(const std::string& in_buf) {
+    return ::request_complete(in_buf);  // From request.h
+  }
 
-  // bool request_complete() const; // have we seen "\r\n\r\n" ?
+  virtual void handle_read(const boost::system::error_code& error,
+                  std::size_t bytes_transferred);
+  
+  virtual void handle_write(const boost::system::error_code& error);
 
   boost::asio::ip::tcp::socket socket_;
   
-  std::string in_buf_;   // accumulates incoming requests
-
-  // 1KB scratch buffer. Fine for echo server, but maybe reconsider sizing for future assignments
+  std::string in_buf_;
+  std::string out_buf_;
+  
   enum { max_length = 1024 };
   char chunk_[max_length];
+
+private:  // Add private section for non-inherited members
+  // Move any non-shared logic here if needed
 };
 
 #endif // SESSION_H

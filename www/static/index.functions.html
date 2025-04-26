@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html class="theme-green">
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>GCC Code Coverage Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="index.css"/>
+  </head>
+
+  <body>
+    <header>
+      <h1>GCC Code Coverage Report</h1>
+
+      <hr/>
+
+      <div class="summary">
+<div>
+  <table class="legend">
+    <tr>
+      <th scope="row">Directory:</th>
+      <td>./</td>
+    </tr>
+    <tr>
+      <th scope="row">Date:</th>
+      <td>2025-04-26 04:26:45</td>
+    </tr>
+  </table>
+</div>
+
+<div>
+  <table class="coverage">
+    <tr>
+      <th></th>
+      <th scope="col">Exec</th>
+      <th scope="col">Total</th>
+      <th scope="col">Coverage</th>
+    </tr>
+    <tr>
+      <th scope="row">Lines:</th>
+      <td>488</td>
+      <td>561</td>
+      <td class="coverage-medium">87.0%</td>
+    </tr>
+    <tr>
+      <th scope="row">Functions:</th>
+      <td>57</td>
+      <td>64</td>
+      <td class="coverage-medium">89.1%</td>
+    </tr>
+    <tr>
+      <th scope="row">Branches:</th>
+      <td>529</td>
+      <td>1076</td>
+      <td class="coverage-low">49.2%</td>
+    </tr>
+  </table>
+</div>
+      </div>
+
+      <hr/>
+    </header>
+
+    <nav>
+    </nav>
+
+    <main>
+<table class="listOfFunctions">
+  <tr>
+    <th>Function (File:Line)</th>
+    <th>Call count</th>
+    <th>Block coverage</th>
+  </tr>
+  <tr><td><a href="index.echo_handler.cc.259a453e36143eb16bda2d4a95d3a9d5.html#l3">EchoHandler::handle_request(Request const&amp;) (src/echo_handler.cc:3)</a></td><td>called 9 times, returned 9 times</td><td>54.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l48">Logger::get_client_ip[abi:cxx11](boost::asio::basic_stream_socket&lt;boost::asio::ip::tcp, boost::asio::any_io_executor&gt; const&amp;) (src/logger.cc:48)</a></td><td>called 13 times, returned 13 times</td><td>35.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l18">Logger::init_logger() (src/logger.cc:18)</a></td><td>called 1 time, returned 1 time</td><td>80.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l71">Logger::log_config_parsing(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, bool) (src/logger.cc:71)</a></td><td>called 1 time, returned 1 time</td><td>60.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l76">Logger::log_connection(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:76)</a></td><td>called 8 times, returned 8 times</td><td>71.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l58">Logger::log_debug(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:58)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l61">Logger::log_error(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:61)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l62">Logger::log_fatal(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:62)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l59">Logger::log_info(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:59)</a></td><td>called 32 times, returned 32 times</td><td>63.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l80">Logger::log_request(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, int) (src/logger.cc:80)</a></td><td>called 5 times, returned 5 times</td><td>46.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l68">Logger::log_server_shutdown() (src/logger.cc:68)</a></td><td>called 1 time, returned 1 time</td><td>62.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l65">Logger::log_server_startup(unsigned short) (src/logger.cc:65)</a></td><td>called 1 time, returned 1 time</td><td>58.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l57">Logger::log_trace(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:57)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.logger.cc.0f5ef6ad2b67001c9f36e6ab77457e12.html#l60">Logger::log_warning(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/logger.cc:60)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l64">NginxConfig::ExtractPort(unsigned short&amp;) (src/config_parser.cc:64)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l32">NginxConfig::ExtractRoutes(std::vector&lt;NginxConfig::RouteConfig, std::allocator&lt;NginxConfig::RouteConfig&gt; &gt;&amp;) (src/config_parser.cc:32)</a></td><td>called 1 time, returned 1 time</td><td>93.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l23">NginxConfig::ToString[abi:cxx11](int) (src/config_parser.cc:23)</a></td><td>called 4 times, returned 4 times</td><td>74.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l21">NginxConfigParser::NginxConfigParser() (src/config_parser.cc:21)</a></td><td>called 30 times, returned 30 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l313">NginxConfigParser::Parse(char const*, NginxConfig*) (src/config_parser.cc:313)</a></td><td>called 30 times, returned 30 times</td><td>87.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l229">NginxConfigParser::Parse(std::istream*, NginxConfig*) (src/config_parser.cc:229)</a></td><td>called 29 times, returned 29 times</td><td>85.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l116">NginxConfigParser::ParseToken(std::istream*, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;*) (src/config_parser.cc:116)</a></td><td>called 262 times, returned 262 times</td><td>98.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l101">NginxConfigParser::TokenTypeAsString(NginxConfigParser::TokenType) (src/config_parser.cc:101)</a></td><td>called 290 times, returned 290 times</td><td>92.0%</td></tr>
+  <tr><td><a href="index.config_parser.cc.31098c8ab4b6825e0940ff3e3cd9edc0.html#l76">NginxConfigStatement::ToString[abi:cxx11](int) (src/config_parser.cc:76)</a></td><td>called 6 times, returned 6 times</td><td>88.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l22">Request::Request(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/request.cc:22)</a></td><td>called 22 times, returned 22 times</td><td>74.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l58">Request::get_header(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) const (src/request.cc:58)</a></td><td>called 11 times, returned 11 times</td><td>76.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l52">Request::get_method[abi:cxx11]() const (src/request.cc:52)</a></td><td>called 18 times, returned 18 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l54">Request::get_url[abi:cxx11]() const (src/request.cc:54)</a></td><td>called 20 times, returned 20 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l56">Request::get_version[abi:cxx11]() const (src/request.cc:56)</a></td><td>called 19 times, returned 19 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l66">Request::is_valid() const (src/request.cc:66)</a></td><td>called 21 times, returned 21 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l68">Request::length() const (src/request.cc:68)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l64">Request::to_string[abi:cxx11]() const (src/request.cc:64)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request_handler.h.6b75ebb892f3861ee99ae3ee9260530a.html#l10">RequestHandler::~RequestHandler() (include/request_handler.h:10)</a></td><td>called 2 times, returned 2 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.response.cc.35231b168e3ea28ccde06a5af63dfa2a.html#l3">Response::Response(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, int, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, int, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;) (src/response.cc:3)</a></td><td>called 14 times, returned 14 times</td><td>52.0%</td></tr>
+  <tr><td><a href="index.response.h.e35b99a97d17daf74a8d2f27006a3ce5.html#l20">Response::get_status_code() const (include/response.h:20)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.response.cc.35231b168e3ea28ccde06a5af63dfa2a.html#l18">Response::to_string[abi:cxx11]() (src/response.cc:18)</a></td><td>called 14 times, returned 14 times</td><td>50.0%</td></tr>
+  <tr><td><a href="index.router.cc.601bf0f74d9bd4e7601906d75dc30446.html#l4">Router::add_route(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, std::unique_ptr&lt;RequestHandler, std::default_delete&lt;RequestHandler&gt; &gt;) (src/router.cc:4)</a></td><td>called 2 times, returned 2 times</td><td>75.0%</td></tr>
+  <tr><td><a href="index.router.cc.601bf0f74d9bd4e7601906d75dc30446.html#l9">Router::handle_request(Request const&amp;) const (src/router.cc:9)</a></td><td>called 3 times, returned 3 times</td><td>37.0%</td></tr>
+  <tr><td><a href="index.router.cc.601bf0f74d9bd4e7601906d75dc30446.html#l34">Router::sanitize_path(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) const (src/router.cc:34)</a></td><td>called 5 times, returned 5 times</td><td>64.0%</td></tr>
+  <tr><td><a href="index.router_session.h.2beb35caa6f1fab3100fa571d984d7da.html#l14">RouterSession::Make(boost::asio::io_context&amp;, Router&amp;) (include/router_session.h:14)</a></td><td>called 5 times, returned 5 times</td><td>71.0%</td></tr>
+  <tr><td><a href="index.router_session.cc.cc1f96fa6be67c80a197b83197994323.html#l7">RouterSession::RouterSession(boost::asio::io_context&amp;, Router&amp;) (src/router_session.cc:7)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.router_session.cc.cc1f96fa6be67c80a197b83197994323.html#l11">RouterSession::handle_read(boost::system::error_code const&amp;, unsigned long) (src/router_session.cc:11)</a></td><td>called 4 times, returned 4 times</td><td>30.0%</td></tr>
+  <tr><td><a href="index.router_session.cc.cc1f96fa6be67c80a197b83197994323.html#l21">RouterSession::handle_read(boost::system::error_code const&amp;, unsigned long)::{lambda(boost::system::error_code const&amp;, unsigned long)#1}::operator()(boost::system::error_code const&amp;, unsigned long) const (src/router_session.cc:21)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.router_session.cc.cc1f96fa6be67c80a197b83197994323.html#l61">RouterSession::handle_read(boost::system::error_code const&amp;, unsigned long)::{lambda(boost::system::error_code const&amp;, unsigned long)#2}::operator()(boost::system::error_code const&amp;, unsigned long) const (src/router_session.cc:61)</a></td><td>called 3 times, returned 3 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.static_handler.cc.e8ecaaae95d27f13a3a317df82e27fa8.html#l11">StaticHandler::configure(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/static_handler.cc:11)</a></td><td>called 5 times, returned 5 times</td><td>58.0%</td></tr>
+  <tr><td><a href="index.static_handler.cc.e8ecaaae95d27f13a3a317df82e27fa8.html#l20">StaticHandler::get_extension(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/static_handler.cc:20)</a></td><td>called 3 times, returned 3 times</td><td>42.0%</td></tr>
+  <tr><td><a href="index.static_handler.cc.e8ecaaae95d27f13a3a317df82e27fa8.html#l26">StaticHandler::get_mime_type(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/static_handler.cc:26)</a></td><td>called 3 times, returned 3 times</td><td>55.0%</td></tr>
+  <tr><td><a href="index.static_handler.cc.e8ecaaae95d27f13a3a317df82e27fa8.html#l88">StaticHandler::handle_request(Request const&amp;) (src/static_handler.cc:88)</a></td><td>called 5 times, returned 5 times</td><td>53.0%</td></tr>
+  <tr><td><a href="index.static_handler.cc.e8ecaaae95d27f13a3a317df82e27fa8.html#l47">StaticHandler::resolve_path(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/static_handler.cc:47)</a></td><td>called 5 times, returned 4 times</td><td>78.0%</td></tr>
+  <tr><td><a href="index._main.cc.081844998d168e00aeaffabd624d2fc9.html#l112">auto main::{lambda(auto:1, auto:2)#1}::operator()&lt;boost::system::error_code, int&gt;(boost::system::error_code, int) const (src/_main.cc:112)</a></td><td>called 1 time, returned 1 time</td><td>100.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l12">getLine(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;&amp;, std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;&amp;) (src/request.cc:12)</a></td><td>called 52 times, returned 52 times</td><td>92.0%</td></tr>
+  <tr><td><a href="index._main.cc.081844998d168e00aeaffabd624d2fc9.html#l37">main (src/_main.cc:37)</a></td><td>called 1 time, returned 1 time</td><td>37.0%</td></tr>
+  <tr><td><a href="index._main.cc.081844998d168e00aeaffabd624d2fc9.html#l118">main::{lambda(boost::asio::io_context&amp;)#1}::operator()(boost::asio::io_context&amp;) const (src/_main.cc:118)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index._main.cc.081844998d168e00aeaffabd624d2fc9.html#l102">main::{lambda(int)#1}::operator()(int) const (src/_main.cc:102)</a></td><td>not called</td><td>0.0%</td></tr>
+  <tr><td><a href="index.request.cc.f42233d7d8ca3d4e25735e15589f705e.html#l6">request_complete(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (src/request.cc:6)</a></td><td>called 20 times, returned 20 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.server.cc.520f4156117065a960e3087182acf4b4.html#l25">server::handle_accept(session*, boost::system::error_code const&amp;) (src/server.cc:25)</a></td><td>called 9 times, returned 8 times</td><td>40.0%</td></tr>
+  <tr><td><a href="index.server.cc.520f4156117065a960e3087182acf4b4.html#l7">server::server(boost::asio::io_context&amp;, short, std::function&lt;session* (boost::asio::io_context&amp;)&gt;) (src/server.cc:7)</a></td><td>called 8 times, returned 7 times</td><td>61.0%</td></tr>
+  <tr><td><a href="index.server.cc.520f4156117065a960e3087182acf4b4.html#l17">server::start_accept() (src/server.cc:17)</a></td><td>called 15 times, returned 15 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l12">session::MakeSession(boost::asio::io_context&amp;) (src/session.cc:12)</a></td><td>called 10 times, returned 10 times</td><td>71.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l35">session::handle_read(boost::system::error_code const&amp;, unsigned long) (src/session.cc:35)</a></td><td>called 15 times, returned 15 times</td><td>35.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l100">session::handle_write(boost::system::error_code const&amp;) (src/session.cc:100)</a></td><td>called 5 times, returned 5 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.session.h.095a527a846e6b50f68ef0cca628f42f.html#l19">session::request_complete(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;) (include/session.h:19)</a></td><td>called 17 times, returned 17 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l16">session::session(boost::asio::io_context&amp;) (src/session.cc:16)</a></td><td>called 16 times, returned 16 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l20">session::socket() (src/session.cc:20)</a></td><td>called 23 times, returned 23 times</td><td>100.0%</td></tr>
+  <tr><td><a href="index.session.cc.a39713a7caf4db9d7b5a9a5e778339b6.html#l24">session::start() (src/session.cc:24)</a></td><td>called 8 times, returned 8 times</td><td>67.0%</td></tr>
+</table>
+
+      <hr/>
+    </main>
+
+    <footer>
+      Generated by: <a href="http://gcovr.com/en/7.0">GCOVR (Version 7.0)</a>
+    </footer>
+  </body>
+</html>

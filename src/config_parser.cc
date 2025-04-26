@@ -14,6 +14,7 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "config_parser.h"
 
@@ -25,6 +26,39 @@ std::string NginxConfig::ToString(int depth) {
     serialized_config.append(statement->ToString(depth));
   }
   return serialized_config;
+}
+
+// Extract the route
+bool NginxConfig::ExtractRoutes(std::vector<RouteConfig>& routes_out) {
+    routes_out.clear();
+    
+    for (const auto& statement : statements_) {
+        if (statement->tokens_.size() >= 2 && 
+            statement->tokens_[0] == "route") {
+            
+            RouteConfig config;
+            config.path = statement->tokens_[1];
+            
+            if (statement->child_block_) {
+                for (const auto& param_stmt : statement->child_block_->statements_) {
+                    if (param_stmt->tokens_.empty()) continue;
+                    
+                    if (param_stmt->tokens_[0] == "handler" &&
+                        param_stmt->tokens_.size() >= 2) {
+                        config.handler_type = param_stmt->tokens_[1];
+                    }
+                    else if (param_stmt->tokens_.size() == 2) {
+                        config.params[param_stmt->tokens_[0]] = param_stmt->tokens_[1];
+                    }
+                }
+            }
+            
+            if (!config.handler_type.empty()) {
+                routes_out.push_back(config);
+            }
+        }
+    }
+    return !routes_out.empty();
 }
 
 bool NginxConfig::ExtractPort(unsigned short& port_out) {
@@ -289,3 +323,4 @@ bool NginxConfigParser::Parse(const char* file_name, NginxConfig* config) {
   config_file.close();
   return return_value;
 }
+

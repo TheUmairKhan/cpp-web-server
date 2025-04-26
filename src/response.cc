@@ -27,5 +27,6 @@ std::string Response::to_string() {
 const std::unordered_map<int, std::string> Response::status_messages_ = {
     {200, "200 OK"},
     {400, "400 Bad Request"},
+    {403, "403 Forbidden"},
     {404, "404 Not Found"}
 };

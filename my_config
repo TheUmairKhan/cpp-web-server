@@ -1,2 +1,20 @@
 # Echo‑server configuration
 port 8080;
+
+route / {
+    handler echo;
+}
+
+route /echo {
+    handler echo;
+}
+
+route /static {
+    handler static;
+    root /usr/src/projects/lebron2016x4/www/static;
+}
+
+route /public {
+    handler static;
+    root /usr/src/projects/lebron2016x4/www/static;
+}
