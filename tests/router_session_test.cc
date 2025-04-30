@@ -10,6 +10,7 @@
 #include "static_handler.h"
 
 using boost::asio::ip::tcp;
+namespace fs = std::filesystem;
 
 // ----------  Fixture that starts the server on SetUp()  ---------------
 class RouterSessionTest : public ::testing::Test {
@@ -23,8 +24,12 @@ protected:
 
     router_ = std::make_shared<Router>();
     router_->add_route("/", std::make_unique<EchoHandler>());
-    StaticHandler::configure("/static", "/usr/src/projects/lebron2016x4/tests/test_directory");
-    router_->add_route("/static", std::make_unique<StaticHandler>());
+    temp_dir_ = fs::temp_directory_path() / "static_test";
+    fs::create_directories(temp_dir_);
+    StaticHandler::configure("/static_test", temp_dir_.string());
+    router_->add_route("/static_test", std::make_unique<StaticHandler>());
+    create_test_file("test.txt", "this is a test");
+    create_test_file("test.html", "<!doctype html><html><head><title>x</title></head><body></body></html>");
     
     // start server
     server_ = std::make_unique<server>(io_service_, port_, [router=router_](boost::asio::io_service& io)
@@ -35,6 +40,10 @@ protected:
   void TearDown() override {
     io_service_.stop();
     if (io_thread_.joinable()) io_thread_.join();
+  }
+
+  void create_test_file(const std::string& name, const std::string& content) {
+      std::ofstream((temp_dir_ / name).c_str()) << content;
   }
 
   // helper to send a request
@@ -58,13 +67,14 @@ protected:
   std::unique_ptr<server> server_;
   std::thread io_thread_;
   std::shared_ptr<Router> router_;
+  fs::path temp_dir_;
 };
 
 // ----------------  Server-session tests  ------------
 
 // Requests test.txt file 
 TEST_F(RouterSessionTest, TXTRequest) {
-  std::string req = "GET /static/test.txt HTTP/1.1\r\n\r\n";
+  std::string req = "GET /static_test/test.txt HTTP/1.1\r\n\r\n";
   tcp::socket sock = SendRequest(req);
   boost::asio::streambuf buf;
   boost::system::error_code ec;
@@ -78,7 +88,7 @@ TEST_F(RouterSessionTest, TXTRequest) {
 
 // Requests test.html file 
 TEST_F(RouterSessionTest, HTMLRequest) {
-  std::string req = "GET /static/test.html HTTP/1.1\r\n\r\n";
+  std::string req = "GET /static_test/test.html HTTP/1.1\r\n\r\n";
   tcp::socket sock = SendRequest(req);
   boost::asio::streambuf buf;
   boost::system::error_code ec;
@@ -123,7 +133,7 @@ TEST_F(RouterSessionTest, IncompleteRequestNoEcho) {
 
 // Missing file should return 404 error
 TEST_F(RouterSessionTest, MissingFile) {
-  std::string req = "GET /static/missing.txt HTTP/1.1\r\n\r\n";
+  std::string req = "GET /static_test/missing.txt HTTP/1.1\r\n\r\n";
   tcp::socket sock = SendRequest(req);
   boost::asio::streambuf buf;
   boost::system::error_code ec;
@@ -137,7 +147,7 @@ TEST_F(RouterSessionTest, MissingFile) {
 
 // Bad request should return 400 error
 TEST_F(RouterSessionTest, InvalidRequest) {
-  std::string req = "GET /static/test.txt\r\n\r\n";
+  std::string req = "GET /static_test/test.txt\r\n\r\n";
   tcp::socket sock = SendRequest(req);
   boost::asio::streambuf buf;
   boost::system::error_code ec;

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <fstream>
 
 #include "router.h"
 #include "echo_handler.h"
@@ -6,13 +7,24 @@
 #include "request.h"
 #include "response.h"
 
+namespace fs = std::filesystem;
+
 class RouterTest : public ::testing::Test {
 protected:
   void SetUp() override {
     router_ = std::make_shared<Router>();
+    temp_dir_ = fs::temp_directory_path() / "static_test";
+    fs::create_directories(temp_dir_);
+    StaticHandler::configure("/static_test", temp_dir_.string());
+    create_test_file("test.txt", "this is a test");
+  }
+
+  void create_test_file(const std::string& name, const std::string& content) {
+    std::ofstream((temp_dir_ / name).c_str()) << content;
   }
 
   std::shared_ptr<Router> router_;
+  fs::path temp_dir_;
 };
 
 // Add multiple routes and test that they are all sanitized
@@ -30,9 +42,8 @@ TEST_F(RouterTest, AddRoutes) {
 }
 
 TEST_F(RouterTest, HandleStaticRequest) {
-  StaticHandler::configure("/static", "/usr/src/projects/lebron2016x4/tests/test_directory");
-  router_->add_route("/static", std::make_unique<StaticHandler>());
-  std::string req = "GET /static/test.txt HTTP/1.1\r\n\r\n";
+  router_->add_route("/static_test", std::make_unique<StaticHandler>());
+  std::string req = "GET /static_test/test.txt HTTP/1.1\r\n\r\n";
   std::unique_ptr<Request> request = std::make_unique<Request>(req);
   Response response = router_->handle_request(*request);
   std::string resp = response.to_string();
