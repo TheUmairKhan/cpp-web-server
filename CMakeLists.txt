@@ -100,6 +100,10 @@ add_executable(unit_tests
   tests/request_test.cc
   tests/echo_handler_test.cc
   tests/static_handler_test.cc
+  tests/router_session_test.cc
+  tests/router_test.cc
+  tests/logger_test.cc
+  tests/response_test.cc
 )
 
 target_include_directories(unit_tests

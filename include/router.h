@@ -13,6 +13,8 @@ class Router {
 public:
     void add_route(const std::string& path_prefix, 
                   std::unique_ptr<RequestHandler> handler);
+
+    std::vector<std::string> get_routes() const;
     
     Response handle_request(const Request& request) const;
 

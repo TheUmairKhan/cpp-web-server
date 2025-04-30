@@ -6,6 +6,14 @@ void Router::add_route(const std::string& path_prefix,
     routes_.emplace_back(sanitize_path(path_prefix), std::move(handler));
 }
 
+std::vector<std::string> Router::get_routes() const {
+    std::vector<std::string> routes;
+    for (const auto& [prefix, handler] : routes_) {
+        routes.push_back(prefix);
+    }
+    return routes;
+}
+
 Response Router::handle_request(const Request& request) const {
     const std::string path = sanitize_path(request.get_url());
     

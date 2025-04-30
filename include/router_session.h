@@ -11,9 +11,7 @@ public:
     RouterSession(boost::asio::io_service& io_service, Router& router);
 
     /* Keep the same factory helper you used in _main.cc */
-    static RouterSession* Make(boost::asio::io_service& io, Router& r) {
-        return new RouterSession(io, r);
-    }
+    static RouterSession* Make(boost::asio::io_service& io, Router& r);
 
     /* override */ void handle_read(const boost::system::error_code& err,
                                     std::size_t bytes_transferred) override;

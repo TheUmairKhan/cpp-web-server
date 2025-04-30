@@ -7,6 +7,10 @@ using boost::asio::ip::tcp;
 RouterSession::RouterSession(boost::asio::io_service& io_service, Router& router)
     : session(io_service), router_(router) {}
 
+RouterSession* RouterSession::Make(boost::asio::io_service& io, Router& r) {
+    return new RouterSession(io, r);
+}
+
 /* Full handle_read from the previous answer */
 void RouterSession::handle_read(const boost::system::error_code& error,
                                 std::size_t bytes_transferred)

@@ -105,6 +105,20 @@ TEST_F(SessionTest, IncompleteRequestNoEcho) {
   EXPECT_FALSE(got_response);  // nothing was echoed
 }
 
+// Bad request should return 400 error
+TEST_F(SessionTest, InvalidRequest) {
+  std::string req = "GET /\r\n\r\n";
+  tcp::socket sock = SendRequest(req);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
+
+  auto body_pos = resp.find("\r\n\r\n");
+  ASSERT_NE(body_pos, std::string::npos);
+  std::string body = resp.substr(body_pos + 4);
+  EXPECT_EQ(body, "Bad Request");
+}
+
 // FINAL LEVEL!
 // A "stress" test that:
 //   1) Creates a GET request with a huge header containing random data
