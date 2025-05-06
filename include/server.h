@@ -3,13 +3,15 @@
 
 #include <boost/asio.hpp>
 #include "session.h"
+#include "router.h"
 
-using SessionFactory = std::function<session*(boost::asio::io_service&)>;
+using SessionFactory = std::function<session*(boost::asio::io_service&, Router&)>;
 
 class server {
 public:
   server(boost::asio::io_service& io_service, 
          short port, 
+         Router& router,
          SessionFactory session_factory);
 
 private:
@@ -19,6 +21,7 @@ private:
 
   boost::asio::io_service& io_service_;
   boost::asio::ip::tcp::acceptor acceptor_;
+  Router& router_;
   SessionFactory session_factory_;
 };
 

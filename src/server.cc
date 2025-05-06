@@ -6,16 +6,18 @@ using boost::asio::ip::tcp;
 
 server::server(boost::asio::io_service& io_service, 
                short port, 
+               Router& router,
                SessionFactory session_factory)
   : io_service_(io_service),
     acceptor_(io_service, tcp::endpoint(tcp::v4(), port)),
+    router_(router),
     session_factory_(session_factory) {
   Logger::log_info("Server listening on port " + std::to_string(port));
   start_accept();
 }
 
 void server::start_accept() {
-  session* new_session = session_factory_(io_service_);
+  session* new_session = session_factory_(io_service_, router_);
   acceptor_.async_accept(
     new_session->socket(),
     boost::bind(&server::handle_accept, this, new_session,

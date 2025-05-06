@@ -20,7 +20,6 @@
 #include "router.h"
 #include "echo_handler.h"
 #include "static_handler.h"
-#include "router_session.h"
 
 using boost::asio::ip::tcp;
 
@@ -104,9 +103,7 @@ int main(int argc, char* argv[]) {
       io_service.stop();
     });
 
-    server srv(io_service, port,
-               [&router](boost::asio::io_service& io)
-                 { return RouterSession::Make(io, router); });
+    server srv(io_service, port, router, session::MakeSession);
 
     std::cout << "Server running on port " << port << "\n";
     io_service.run();

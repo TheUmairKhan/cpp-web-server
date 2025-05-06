@@ -11,8 +11,8 @@ using boost::asio::ip::tcp;
 // Mock session class for testing server
 class MockSession : public session {
   public:
-    static MockSession* MakeMockSession(boost::asio::io_service& io_service) {
-      return new MockSession(io_service);
+    static MockSession* MakeMockSession(boost::asio::io_service& io_service, Router& r) {
+      return new MockSession(io_service, r);
     }
 
     tcp::socket& socket() override {
@@ -24,8 +24,8 @@ class MockSession : public session {
     }
 
   private:
-    MockSession(boost::asio::io_service& io_service)
-    : session(io_service), mock_socket_(io_service) {}
+    MockSession(boost::asio::io_service& io_service, Router& r)
+    : session(io_service, r), mock_socket_(io_service) {}
     
     tcp::socket mock_socket_;
 };
@@ -54,7 +54,9 @@ protected:
 TEST_F(ServerTest, ConnectionAcceptedAndSessionStarts) {
   // Start server
   port = GetOpenPort(io_service);
-  server s(io_service, port, MockSession::MakeMockSession);
+  // server s(io_service, port, MockSession::MakeMockSession);
+  Router router;
+  server s(io_service, port, router, MockSession::MakeMockSession);
 
   // Server should start mock session which will throw an error
   EXPECT_THROW({
@@ -77,8 +79,9 @@ TEST_F(ServerTest, ServerPortInUse) {
   //occupied_acceptor.set_option(tcp::acceptor::reuse_address(true));
   occupied_acceptor.bind(endpoint);
   occupied_acceptor.listen();
-  
+
+  Router router;
   // Server should not be created and will throw error
-  EXPECT_THROW({server s(io_service, port, MockSession::MakeMockSession);}, boost::system::system_error);
+  EXPECT_THROW(server s(io_service, port, router, MockSession::MakeMockSession), boost::system::system_error);
   occupied_acceptor.close();
 }

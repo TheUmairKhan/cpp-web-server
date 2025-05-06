@@ -46,7 +46,6 @@ add_library(echoserver_lib
   src/echo_handler.cc
   src/static_handler.cc
   src/router.cc          # Add this line
-  src/router_session.cc
   src/logger.cc
 )
 
@@ -100,7 +99,6 @@ add_executable(unit_tests
   tests/request_test.cc
   tests/echo_handler_test.cc
   tests/static_handler_test.cc
-  tests/router_session_test.cc
   tests/router_test.cc
   tests/logger_test.cc
   tests/response_test.cc
