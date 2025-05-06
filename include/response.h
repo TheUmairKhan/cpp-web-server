@@ -17,7 +17,7 @@ class Response {
     std::string to_string();
 
     // Returns status code
-    int get_status_code() const { return status_code_; }
+    int get_status_code() const;
 
   private:  
     int status_code_;

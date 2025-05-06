@@ -81,6 +81,39 @@ TEST_F(NginxConfigTest, ToStringWithDepth) {
   EXPECT_EQ(out_config.ToString(1), config_text);
 }
 
+// NginxConfig ExtractRoutes tests
+TEST_F(NginxConfigTest, ExtractRoutesGood) {
+  std::string config_text = "port 80;\nroute / {\nhandler echo;\n}\nroute /static {\nhandler static;\nroot /;\n}";
+  WriteConfig(config_text);
+  std::vector<NginxConfig::RouteConfig> routes;
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  ASSERT_TRUE(out_config.ExtractRoutes(routes));
+  EXPECT_EQ(routes.size(), 2);
+  EXPECT_EQ(routes[0].path, "/");
+  EXPECT_EQ(routes[0].handler_type, "echo");
+  EXPECT_EQ(routes[1].path, "/static");
+  EXPECT_EQ(routes[1].handler_type, "static");
+}
+
+TEST_F(NginxConfigTest, ExtractRoutesBadHandler) {
+  std::string config_text = "port 80;\nroute / {\nhandler echo;\n}\nroute /static {\nbadhandler static;\nroot /;\n}";
+  WriteConfig(config_text);
+  std::vector<NginxConfig::RouteConfig> routes;
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  ASSERT_TRUE(out_config.ExtractRoutes(routes));
+  EXPECT_EQ(routes.size(), 1);
+  EXPECT_EQ(routes[0].path, "/");
+  EXPECT_EQ(routes[0].handler_type, "echo");
+}
+
+TEST_F(NginxConfigTest, ExtractRoutesEmpty) {
+  std::string config_text = "route / {\nbad;\n}";
+  WriteConfig(config_text);
+  std::vector<NginxConfig::RouteConfig> routes;
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractRoutes(routes));
+}
+
 
 // ----------------  NginxConfigParser unit tests  ------------
 

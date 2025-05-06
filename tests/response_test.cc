@@ -15,6 +15,7 @@ TEST(ResponseTest, Correct200Response) {
         "<h1>Hello</h1>";
 
     EXPECT_EQ(res.to_string(), expected);
+    EXPECT_EQ(res.get_status_code(), 200);
 }
 
 // 404 Not Found response 
@@ -29,6 +30,7 @@ TEST(ResponseTest, Correct404Response) {
         "Not Found";
 
     EXPECT_EQ(res.to_string(), expected);
+        EXPECT_EQ(res.get_status_code(), 404);
 }
 
 // 403 Forbidden with empty body
@@ -42,6 +44,7 @@ TEST(ResponseTest, Correct403Response) {
         "Connection: close\r\n\r\n";
 
     EXPECT_EQ(res.to_string(), expected);
+    EXPECT_EQ(res.get_status_code(), 403);
 }
 
 // 400 Bad Request
@@ -56,4 +59,5 @@ TEST(ResponseTest, Correct400Response) {
         "Bad Request";
 
     EXPECT_EQ(res.to_string(), expected);
+    EXPECT_EQ(res.get_status_code(), 400);
 }

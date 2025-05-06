@@ -29,6 +29,9 @@ class NginxConfig {
     std::unordered_map<std::string, std::string> params;
   };
 
+  // Extracts the routes from the parsed config and stores them in the
+  // provided routes_out out-param.
+  // Returns false if no routes extracted from config, true otherwise
   bool ExtractRoutes(std::vector<RouteConfig>& routes_out);
 
   // Extracts the port number from the parsed config and stores the port

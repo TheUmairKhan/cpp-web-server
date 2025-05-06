@@ -21,6 +21,10 @@ tcp::socket& session::socket() {
   return socket_;
 }
 
+bool session::request_complete(const std::string& in_buf) {
+  return ::request_complete(in_buf);  // From request.h
+}
+
 void session::start() {
   // Kick off the first asynchronous read.
   auto ip = Logger::get_client_ip(socket_);

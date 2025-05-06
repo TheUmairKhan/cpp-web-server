@@ -24,6 +24,8 @@ std::string Response::to_string() {
     return response;
 }
 
+int Response::get_status_code() const { return status_code_; }
+
 const std::unordered_map<int, std::string> Response::status_messages_ = {
     {200, "200 OK"},
     {400, "400 Bad Request"},
