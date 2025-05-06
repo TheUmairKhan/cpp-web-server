@@ -9,6 +9,7 @@
 
 class StaticHandler : public RequestHandler {
 public:
+    // Configures static handler to map url_prefix to its proper directory path in filesystem
     static void configure(const std::string& url_prefix, 
                          const std::string& filesystem_path);
     
@@ -16,7 +17,6 @@ public:
 
 private:
     static std::unordered_map<std::string, std::string> prefix_to_path_;
-    
     static std::string get_mime_type(const std::string& file_extension);
     static std::string resolve_path(const std::string& url_path);
     static std::string get_extension(const std::string& path);

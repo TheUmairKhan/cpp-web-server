@@ -9,6 +9,8 @@ class RequestHandler {
   public:
     virtual ~RequestHandler() {}
 
+    // Given a request, returns proper response. Overridden by derived handlers with their 
+    // specific implementations
     virtual Response handle_request(const Request& request) = 0;
 };
     
