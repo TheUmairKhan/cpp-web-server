@@ -83,8 +83,14 @@ TEST_F(NginxConfigTest, ToStringWithDepth) {
 
 // NginxConfig ExtractRoutes tests
 TEST_F(NginxConfigTest, ExtractRoutesGood) {
-  std::string config_text = "port 80;\nroute / {\nhandler echo;\n}\nroute /static {\nhandler static;\nroot /;\n}";
+  std::string config_text =
+    "port 80;\n"
+    "location / echo {\n"
+    "}\n"
+    "location /static static {\n"
+    "}\n";
   WriteConfig(config_text);
+
   std::vector<NginxConfig::RouteConfig> routes;
   ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
   ASSERT_TRUE(out_config.ExtractRoutes(routes));
@@ -96,24 +102,86 @@ TEST_F(NginxConfigTest, ExtractRoutesGood) {
 }
 
 TEST_F(NginxConfigTest, ExtractRoutesBadHandler) {
-  std::string config_text = "port 80;\nroute / {\nhandler echo;\n}\nroute /static {\nbadhandler static;\nroot /;\n}";
+  std::string config_text =
+    "port 80;\n"
+    "location / echo {\n"
+    "}\n"
+    "location /static nope {\n"
+    "}\n";
   WriteConfig(config_text);
+
   std::vector<NginxConfig::RouteConfig> routes;
   ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
   ASSERT_TRUE(out_config.ExtractRoutes(routes));
-  EXPECT_EQ(routes.size(), 1);
-  EXPECT_EQ(routes[0].path, "/");
-  EXPECT_EQ(routes[0].handler_type, "echo");
+  EXPECT_EQ(routes.size(), 2);
+  EXPECT_EQ(routes[1].path, "/static");
+  EXPECT_EQ(routes[1].handler_type, "nope");
 }
 
 TEST_F(NginxConfigTest, ExtractRoutesEmpty) {
-  std::string config_text = "route / {\nbad;\n}";
+  // No location blocks → failure
+  std::string config_text = "port 80;\n";
   WriteConfig(config_text);
+
   std::vector<NginxConfig::RouteConfig> routes;
   ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
   EXPECT_FALSE(out_config.ExtractRoutes(routes));
 }
 
+TEST_F(NginxConfigTest, ExtractRoutesRejectQuotedPathOrValue) {
+  std::vector<std::string> configs = {
+    // 1) Quoted argument value
+    R"(
+      port 80;
+      location /static static {
+        root "./files";
+      }
+    )",
+    // 2) Quoted path in header
+    R"(
+      port 80;
+      location "/foo" static {
+      }
+    )"
+  };
+
+  for (auto& cfg : configs) {
+    WriteConfig(cfg);
+    std::vector<NginxConfig::RouteConfig> routes;
+    // Parser should succeed, but ExtractRoutes should reject quoting
+    ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+    EXPECT_FALSE(out_config.ExtractRoutes(routes))
+        << "Expected ExtractRoutes to fail on config:\n" << cfg;
+  }
+}
+
+// Reject any location path with a trailing slash (except "/")
+TEST_F(NginxConfigTest, ExtractRoutesRejectTrailingSlash) {
+  std::string config_text =
+    "port 80;\n"
+    "location /foo/ static {\n"   // trailing slash → error
+    "}\n";
+  WriteConfig(config_text);
+
+  std::vector<NginxConfig::RouteConfig> routes;
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractRoutes(routes));
+}
+
+// Reject duplicate location blocks
+TEST_F(NginxConfigTest, ExtractRoutesRejectDuplicateLocation) {
+  std::string config_text =
+    "port 80;\n"
+    "location /bar static {\n"
+    "}\n"
+    "location /bar static {\n"    // duplicate → error
+    "}\n";
+  WriteConfig(config_text);
+
+  std::vector<NginxConfig::RouteConfig> routes;
+  ASSERT_TRUE(parser.Parse(test_config_path.c_str(), &out_config));
+  EXPECT_FALSE(out_config.ExtractRoutes(routes));
+}
 
 // ----------------  NginxConfigParser unit tests  ------------
 

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-
+#include <unordered_set>
 #include "config_parser.h"
 
 NginxConfigParser::NginxConfigParser() {}
@@ -30,34 +30,68 @@ std::string NginxConfig::ToString(int depth) {
 
 // Extract the route
 bool NginxConfig::ExtractRoutes(std::vector<RouteConfig>& routes_out) {
+    std::unordered_set<std::string> seen_paths;
     routes_out.clear();
-    
-    for (const auto& statement : statements_) {
-        if (statement->tokens_.size() >= 2 && 
-            statement->tokens_[0] == "route") {
-            
-            RouteConfig config;
-            config.path = statement->tokens_[1];
-            
-            if (statement->child_block_) {
-                for (const auto& param_stmt : statement->child_block_->statements_) {
-                    if (param_stmt->tokens_.empty()) continue;
-                    
-                    if (param_stmt->tokens_[0] == "handler" &&
-                        param_stmt->tokens_.size() >= 2) {
-                        config.handler_type = param_stmt->tokens_[1];
-                    }
-                    else if (param_stmt->tokens_.size() == 2) {
-                        config.params[param_stmt->tokens_[0]] = param_stmt->tokens_[1];
-                    }
+
+    for (auto& stmt : statements_) {
+        // 1) Look for “location <path> <HandlerName>”
+        if (stmt->tokens_.size() < 3 || stmt->tokens_[0] != "location")
+            continue;
+
+        const std::string& path    = stmt->tokens_[1];
+        const std::string& handler = stmt->tokens_[2];
+
+        if (path.find('\"') != std::string::npos ||
+            path.find('\'') != std::string::npos) {
+          std::cerr << "Config error: quoting not allowed in location path \"" 
+                    << path << "\"\n";
+          return false;
+        }
+
+        // 2) No trailing slash (except "/" itself)
+        if (path.size() > 1 && path.back() == '/') {
+            std::cerr << "Config error: trailing slash in location \""
+                      << path << "\"\n";
+            return false;
+        }
+
+        // 3) Enforce unique locations
+        if (!seen_paths.insert(path).second) {
+            std::cerr << "Config error: duplicate location \""
+                      << path << "\"\n";
+            return false;
+        }
+
+        RouteConfig rc;
+        rc.path         = path;
+        rc.handler_type = handler;
+
+        // 4) Parse exactly two-token args inside { … }
+        if (stmt->child_block_) {
+            for (auto& child : stmt->child_block_->statements_) {
+                if (child->tokens_.size() != 2) {
+                    std::cerr << "Config error: invalid argument in location \""
+                              << path << "\"\n";
+                    return false;
                 }
-            }
-            
-            if (!config.handler_type.empty()) {
-                routes_out.push_back(config);
+
+                const std::string& key   = child->tokens_[0];
+                const std::string& value = child->tokens_[1];
+
+                if (value.front() == '\"' || value.front() == '\'') {
+                  std::cerr << "Config error: quoting not allowed in argument value \""
+                            << value << "\"\n";
+                  return false;
+                }
+
+                rc.params[key] = value;
             }
         }
+
+        routes_out.push_back(std::move(rc));
     }
+
+    // Must have at least one location block
     return !routes_out.empty();
 }
 
@@ -284,8 +318,13 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
           new_config);
       config_stack.push(new_config);
     } else if (token_type == TOKEN_TYPE_END_BLOCK) {
-      // Added an extra condition with && for consecutive } }.
-      if (last_token_type != TOKEN_TYPE_STATEMENT_END && last_token_type != TOKEN_TYPE_END_BLOCK) {
+      // Allow:
+      //  • closing a non-empty block (…; })
+      //  • consecutive blocks (…} })
+      //  • empty blocks ({ })
+      if (last_token_type != TOKEN_TYPE_STATEMENT_END &&
+          last_token_type != TOKEN_TYPE_END_BLOCK &&
+          last_token_type != TOKEN_TYPE_START_BLOCK) {
         // Error.
         break;
       }
@@ -323,4 +362,3 @@ bool NginxConfigParser::Parse(const char* file_name, NginxConfig* config) {
   config_file.close();
   return return_value;
 }
-

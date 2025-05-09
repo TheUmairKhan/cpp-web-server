@@ -115,23 +115,27 @@ def main() -> int:
         (stat_root / "image.jpg").write_bytes(jpg_bytes)
 
         cfg = Path(tmp) / "test.conf"
-        cfg.write_text(f"""
+        cfg.write_text(textwrap.dedent(f"""\
             port {port};
-            route / {{
-              handler echo;
-            }}
-            route /static {{
-              handler static;
-              root {stat_root};
-            }}
-            route /public {{
-              handler static;
-              root {stat_root};
-            }}
-        """)
 
-        srv = subprocess.Popen([str(SERVER_BIN), str(cfg)],
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            location / EchoHandler {{
+            }}
+
+            location /static StaticHandler {{
+                root {stat_root};  # ← absolute path to tmp/static
+            }}
+
+            location /public StaticHandler {{
+                root {stat_root};
+            }}
+        """))
+
+        srv = subprocess.Popen(
+            [str(SERVER_BIN), str(cfg)],
+            cwd=tmp,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         try:
             if not wait_listening(port):
                 print("[integration] server never opened port", file=sys.stderr)

@@ -67,10 +67,10 @@ int main(int argc, char* argv[]) {
     /* ───────────── Build router ───────────────── */
     Router router;
     for (const auto& route : routes) {
-      if (route.handler_type == "echo") {
+      if (route.handler_type == "EchoHandler") {
         router.add_route(route.path, std::make_unique<EchoHandler>());
       }
-      else if (route.handler_type == "static") {
+      else if (route.handler_type == "StaticHandler") {
         auto it = route.params.find("root");
         if (it == route.params.end()) {
           std::cerr << "Static handler missing root directory\n";

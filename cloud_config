@@ -1,20 +1,16 @@
 # Configure port and routes
 port 80;
 
-route / {
-    handler echo;
+location / EchoHandler {
 }
 
-route /echo {
-    handler echo;
+location /echo EchoHandler {
 }
 
-route /static {
-    handler static;
-    root /var/www/static;
+location /static StaticHandler {
+    root ./var/www/static;
 }
 
-route /public {
-    handler static;
-    root /var/www/static;
+location /public StaticHandler {
+    root ./var/www/static;
 }

@@ -8,13 +8,28 @@ namespace fs = std::filesystem;
 
 std::unordered_map<std::string, std::string> StaticHandler::prefix_to_path_;
 
-void StaticHandler::configure(const std::string& url_prefix, 
-                             const std::string& filesystem_path) {
-    // Convert to absolute path and create if needed
-    fs::path abs_path = fs::absolute(filesystem_path);
-    fs::create_directories(abs_path);
-    
-    prefix_to_path_[url_prefix] = abs_path.string();
+void StaticHandler::configure(const std::string& url_prefix,
+                              const std::string& filesystem_path) {
+    fs::path cfg(filesystem_path);
+
+    // If the config path is absolute, use it directly; otherwise
+    // anchor a relative path under the folder holding our binary.
+    fs::path abs_root;
+    if (cfg.is_absolute()) {
+        abs_root = fs::canonical(cfg);
+    } else {
+        // 1) where the running exe lives
+        fs::path exe    = fs::read_symlink("/proc/self/exe");
+        fs::path bindir = exe.parent_path();
+        // 2) resolve bindir + relative cfg
+        abs_root = fs::weakly_canonical(bindir / cfg);
+    }
+
+    // Create it if it doesn’t exist
+    fs::create_directories(abs_root);
+
+    // Finally store it for serve-time lookup
+    prefix_to_path_[url_prefix] = abs_root.string();
 }
 
 std::string StaticHandler::get_extension(const std::string& path) {
