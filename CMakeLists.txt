@@ -47,6 +47,7 @@ add_library(echoserver_lib
   src/static_handler.cc
   src/router.cc          # Add this line
   src/logger.cc
+  src/handler_registry.cc
 )
 
 
@@ -102,6 +103,7 @@ add_executable(unit_tests
   tests/router_test.cc
   tests/logger_test.cc
   tests/response_test.cc
+  tests/handler_registry_test.cc
 )
 
 target_include_directories(unit_tests
