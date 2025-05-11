@@ -156,3 +156,53 @@ TEST(RouterLifetimeTest, HandlersArePerRequest) {
   r.handle_request(req);
   EXPECT_EQ(g_live_count, 0);
 }
+
+// -----------------------------------------------------------------------------
+// Test: LongestPrefixMatching
+//
+// Verify that when both "/" and "/foo" are registered, 
+// a request for "/foo/bar" hits "/foo", and a request for "/baz"
+// hits "/".
+// -----------------------------------------------------------------------------
+TEST_F(RouterTest, LongestPrefixMatching) {
+  // A small handler that records which 'loc' it was given.
+  struct PrefixHandler : RequestHandler {
+    explicit PrefixHandler(std::string loc) : loc_(std::move(loc)) {}
+    Response handle_request(const Request& req) override {
+      // Return the prefix as the body
+      return Response(req.get_version(),
+                      200,
+                      "text/plain",
+                      loc_.size(),
+                      "close",
+                      loc_);
+    }
+    std::string loc_;
+  };
+
+  // Factory that constructs a PrefixHandler using the 'loc' passed in.
+  Router::Factory prefix_factory = [](const std::string& loc,
+                                      const std::unordered_map<std::string,std::string>&) {
+    return new PrefixHandler(loc);
+  };
+
+  // Register "/" and "/foo"
+  router_->add_route("/",     prefix_factory, {});
+  router_->add_route("/foo",  prefix_factory, {});
+
+  // 1) Request under "/foo": should hit the "/foo" handler
+  {
+    Request  req("GET /foo/bar HTTP/1.1\r\n\r\n");
+    Response resp = router_->handle_request(req);
+    auto     body = resp.to_string().substr(resp.to_string().find("\r\n\r\n") + 4);
+    EXPECT_EQ(body, "/foo");
+  }
+
+  // 2) Request outside "/foo": should fall back to "/"
+  {
+    Request  req("GET /baz/qux HTTP/1.1\r\n\r\n");
+    Response resp = router_->handle_request(req);
+    auto     body = resp.to_string().substr(resp.to_string().find("\r\n\r\n") + 4);
+    EXPECT_EQ(body, "/");
+  }
+}
