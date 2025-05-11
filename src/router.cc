@@ -1,56 +1,50 @@
 #include "router.h"
 #include <algorithm>
 
-void Router::add_route(const std::string& path_prefix, 
-                      std::unique_ptr<RequestHandler> handler) {
-    routes_.emplace_back(sanitize_path(path_prefix), std::move(handler));
+void Router::add_route(const std::string& path_prefix,
+                       Factory factory,
+                       std::unordered_map<std::string,std::string> params) {
+  routes_.push_back(RouteEntry{
+    sanitize_path(path_prefix),
+    std::move(factory),
+    std::move(params)
+  });
 }
 
 std::vector<std::string> Router::get_routes() const {
-    std::vector<std::string> routes;
-    for (const auto& [prefix, handler] : routes_) {
-        routes.push_back(prefix);
-    }
-    return routes;
+  std::vector<std::string> out;
+  for (auto& e : routes_) out.push_back(e.prefix);
+  return out;
 }
 
 Response Router::handle_request(const Request& request) const {
-    const std::string path = sanitize_path(request.get_url());
-    
-    // Find longest matching prefix
-    auto best_match = routes_.cend();
-    size_t max_length = 0;
-    
-    for (auto it = routes_.cbegin(); it != routes_.cend(); ++it) {
-        const std::string& prefix = it->first;
-        if (path.compare(0, prefix.length(), prefix) == 0) {
-            if (prefix.length() > max_length) {
-                max_length = prefix.length();
-                best_match = it;
-            }
-        }
+  const std::string path = sanitize_path(request.get_url());
+
+  // find longest‐matching prefix
+  const RouteEntry* best = nullptr;
+  size_t best_len = 0;
+  for (auto& e : routes_) {
+    if (path.rfind(e.prefix, 0) == 0 && e.prefix.size() > best_len) {
+      best = &e;
+      best_len = e.prefix.size();
     }
-    
-    if (best_match != routes_.cend()) {
-        return best_match->second->handle_request(request);
-    }
-    
-    // Default 404 handler
-    return Response(request.get_version(), 404, "text/plain", 9, "close", "Not Found");
+  }
+
+  if (!best) {
+    return Response(request.get_version(), 404,
+                    "text/plain", 9, "close", "Not Found");
+  }
+
+  // **per-request** instantiate, use, then destroy:
+  RequestHandler* h = best->factory(best->prefix, best->params);
+  Response resp = h->handle_request(request);
+  delete h;
+  return resp;
 }
 
 std::string Router::sanitize_path(const std::string& path) const {
-    std::string sanitized = path;
-    
-    // Ensure path starts with /
-    if (sanitized.empty() || sanitized[0] != '/') {
-        sanitized = "/" + sanitized;
-    }
-    
-    // Remove trailing slash
-    if (sanitized.size() > 1 && sanitized.back() == '/') {
-        sanitized.pop_back();
-    }
-    
-    return sanitized;
+  std::string s = path;
+  if (s.empty() || s[0] != '/') s.insert(s.begin(), '/');
+  if (s.size()>1 && s.back()=='/') s.pop_back();
+  return s;
 }

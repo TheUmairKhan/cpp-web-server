@@ -1,125 +1,101 @@
+// src/static_handler.cc
 #include "static_handler.h"
 #include <fstream>
-#include <stdexcept>
-#include <vector>
+#include <iterator>
 #include <cstring>
 
-namespace fs = std::filesystem;
+// define the kName symbol
+constexpr char StaticHandler::kName[];
 
-std::unordered_map<std::string, std::string> StaticHandler::prefix_to_path_;
+// Factory invoked by HandlerRegistry
+RequestHandler* StaticHandler::Init(
+    const std::string& location,
+    const std::unordered_map<std::string, std::string>& params) {
+  auto it = params.find("root");
+  if (it == params.end()) {
+    throw std::runtime_error(
+      "StaticHandler missing 'root' parameter for location " + location);
+  }
 
-void StaticHandler::configure(const std::string& url_prefix,
-                              const std::string& filesystem_path) {
-    fs::path cfg(filesystem_path);
+  // canonicalize the root on disk
+  fs::path cfg = it->second;
+  fs::path abs_root = cfg.is_absolute()
+    ? fs::canonical(cfg)
+    : fs::weakly_canonical(fs::read_symlink("/proc/self/exe").parent_path() / cfg);
 
-    // If the config path is absolute, use it directly; otherwise
-    // anchor a relative path under the folder holding our binary.
-    fs::path abs_root;
-    if (cfg.is_absolute()) {
-        abs_root = fs::canonical(cfg);
-    } else {
-        // 1) where the running exe lives
-        fs::path exe    = fs::read_symlink("/proc/self/exe");
-        fs::path bindir = exe.parent_path();
-        // 2) resolve bindir + relative cfg
-        abs_root = fs::weakly_canonical(bindir / cfg);
-    }
-
-    // Create it if it doesn’t exist
-    fs::create_directories(abs_root);
-
-    // Finally store it for serve-time lookup
-    prefix_to_path_[url_prefix] = abs_root.string();
+  return new StaticHandler(location, abs_root.string());
 }
 
-std::string StaticHandler::get_extension(const std::string& path) {
-    size_t dot_pos = path.find_last_of('.');
-    if (dot_pos == std::string::npos) return "";
-    return path.substr(dot_pos);
+// Constructor saves both pieces of information
+StaticHandler::StaticHandler(std::string url_prefix, std::string filesystem_root)
+  : prefix_(std::move(url_prefix)),
+    fs_root_(std::move(filesystem_root)) {}
+
+// Extract file extension (including the dot), or "" if none
+std::string StaticHandler::get_extension(const std::string& path) const {
+  auto pos = path.find_last_of('.');
+  return (pos == std::string::npos ? "" : path.substr(pos));
 }
 
-std::string StaticHandler::get_mime_type(const std::string& file_extension) {
-    static const std::unordered_map<std::string, std::string> mime_types = {
-        {".html", "text/html"},
-        {".htm", "text/html"},
-        {".txt", "text/plain"},
-        {".css", "text/css"},
-        {".js", "application/javascript"},
-        {".json", "application/json"},
-        {".jpg", "image/jpeg"},
-        {".jpeg", "image/jpeg"},
-        {".png", "image/png"},
-        {".gif", "image/gif"},
-        {".svg", "image/svg+xml"},
-        {".zip", "application/zip"},
-        {".pdf", "application/pdf"}
-    };
-    
-    auto it = mime_types.find(file_extension);
-    return (it != mime_types.end()) ? it->second : "application/octet-stream";
+// A small static table; falls back to octet-stream
+std::string StaticHandler::get_mime_type(const std::string& ext) const {
+  static const std::unordered_map<std::string, std::string> m = {
+    {".html","text/html"},{".htm","text/html"},{".txt","text/plain"},
+    {".css","text/css"},{".js","application/javascript"},
+    {".json","application/json"},{".jpg","image/jpeg"},
+    {".jpeg","image/jpeg"},{".png","image/png"},{".gif","image/gif"},
+    {".svg","image/svg+xml"},{".zip","application/zip"},
+    {".pdf","application/pdf"}
+  };
+  auto it = m.find(ext);
+  return it==m.end() ? "application/octet-stream" : it->second;
 }
 
-std::string StaticHandler::resolve_path(const std::string& url_path)
-{
-    /* ───────────────────────────────
-       1.  Find the *longest* matching
-           mount-point (/static, /public …)
-    ─────────────────────────────── */
-    std::string matched_prefix;
-    std::string remaining;
+// Build the real filesystem path, guard against traversal
+std::string StaticHandler::resolve_path(const std::string& url_path) const {
+  // strip off the URL prefix
+  if (url_path.rfind(prefix_,0)!=0) {
+    throw std::runtime_error("No static mount for this path");
+  }
+  std::string rest = url_path.substr(prefix_.size());
+  if (!rest.empty() && rest[0]=='/') rest.erase(0,1);
 
-    for (const auto& [prefix, fs_root] : prefix_to_path_) {
-        if (url_path.rfind(prefix, 0) == 0 &&           // prefix matches start
-            prefix.size() > matched_prefix.size()) {    // keep the longest
-            matched_prefix = prefix;
-            remaining      = url_path.substr(prefix.size());
-        }
-    }
+  // canonicalize base and candidate
+  fs::path base = fs::canonical(fs_root_);
+  fs::path full = fs::weakly_canonical(base / rest);
 
-    if (matched_prefix.empty())
-        throw std::runtime_error("No static handler configured for this path");
-
-    /* ───────────────────────────────
-       2.  Build the tentative path
-    ─────────────────────────────── */
-    if (!remaining.empty() && remaining.front() == '/')
-        remaining.erase(0, 1);                          // drop the leading '/'
-
-    fs::path base  = fs::canonical(prefix_to_path_[matched_prefix]);
-    fs::path full  = fs::weakly_canonical(base / remaining);
-
-    /* ───────────────────────────────
-       3.  Path-traversal defence
-    ─────────────────────────────── */
-    const std::string base_str = base.generic_string();
-    const std::string full_str = full.generic_string();
-
-    if (full_str.rfind(base_str, 0) != 0)               // not a prefix
-        throw std::runtime_error("Path traversal attempt detected");
-
-    return full_str;
+  // ensure full stays under base
+  if (full.generic_string().rfind(base.generic_string(),0)!=0) {
+    throw std::runtime_error("Path traversal attempt detected");
+  }
+  return full.string();
 }
 
+// The actual request handler
 Response StaticHandler::handle_request(const Request& request) {
-    try {
-        std::string fs_path = resolve_path(request.get_url());
-        
-        std::ifstream file(fs_path, std::ios::binary);
-        if (!file) {
-            const std::string body = "404 Error: File not found";
-            return Response(request.get_version(), 404, "text/plain", 
-                           body.size(), "close", body);
-        }
-        
-        std::string content_type = get_mime_type(get_extension(fs_path));
-        std::string body((std::istreambuf_iterator<char>(file)), 
-                        std::istreambuf_iterator<char>());
-        
-        return Response(request.get_version(), 200, content_type,
-                       body.size(), "close", body);
+  try {
+    auto path = resolve_path(request.get_url());
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+      // 404 Not Found
+      std::string b = "404 Error: File not found";
+      return Response(request.get_version(), 404,
+                      "text/plain", b.size(), "close", b);
     }
-    catch (const std::runtime_error& e) {
-        return Response(request.get_version(), 403, "text/plain",
-                       strlen(e.what()), "close", e.what());
-    }
+
+    // slurp the file
+    std::string body{ std::istreambuf_iterator<char>(in),
+                      std::istreambuf_iterator<char>() };
+
+    auto ext = get_extension(path);
+    auto mime = get_mime_type(ext);
+    return Response(request.get_version(), 200,
+                    mime, body.size(), "close", body);
+  }
+  catch (const std::runtime_error& e) {
+    // 403 Forbidden on traversal or bad mount
+    std::string msg = e.what();
+    return Response(request.get_version(), 403,
+                    "text/plain", msg.size(), "close", msg);
+  }
 }

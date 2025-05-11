@@ -1,15 +1,17 @@
-// tests/handler_registry_tests.cc
-
 #include "handler_registry.h"
-#include "request_handler.h"   // brings in RequestHandler, Request, Response
+
+#include "request_handler.h"
+#include "echo_handler.h"     
+#include "static_handler.h"   
 #include <gtest/gtest.h>
 #include <stdexcept>
 
+// -----------------------------------------------------------------------------
+// DummyHandler
 //
-// A concrete dummy so HandlerRegistry can construct one.
-// We never actually call handle_request in these tests,
-// so throwing is fine and avoids needing a valid Response ctor.
-//
+// A trivial RequestHandler for testing registry behavior. We never invoke
+// handle_request, so throwing is acceptable.
+// -----------------------------------------------------------------------------
 class DummyHandler : public RequestHandler {
  public:
   Response handle_request(const Request& /*req*/) override {
@@ -17,8 +19,12 @@ class DummyHandler : public RequestHandler {
   }
 };
 
+// -----------------------------------------------------------------------------
+// RegisterHandler tests
+// -----------------------------------------------------------------------------
+
+// First registration under a given name should succeed; duplicates should fail.
 TEST(HandlerRegistryTest, RegisterReturnsTrueThenFalseOnDuplicate) {
-  // First registration of "Foo" should succeed.
   bool first = HandlerRegistry::RegisterHandler(
       "Foo",
       [](const std::string& /*loc*/,
@@ -27,7 +33,6 @@ TEST(HandlerRegistryTest, RegisterReturnsTrueThenFalseOnDuplicate) {
       });
   EXPECT_TRUE(first);
 
-  // Second registration under the same name should be rejected.
   bool second = HandlerRegistry::RegisterHandler(
       "Foo",
       [](const std::string& /*loc*/,
@@ -37,11 +42,15 @@ TEST(HandlerRegistryTest, RegisterReturnsTrueThenFalseOnDuplicate) {
   EXPECT_FALSE(second);
 }
 
+// -----------------------------------------------------------------------------
+// CreateHandler tests
+// -----------------------------------------------------------------------------
+
+// Ensure CreateHandler invokes the registered factory with correct arguments.
 TEST(HandlerRegistryTest, CreateHandlerInvokesFactoryWithCorrectArgs) {
   std::string seenLocation;
   std::unordered_map<std::string, std::string> seenParams;
 
-  // Register a factory that records its inputs.
   ASSERT_TRUE(HandlerRegistry::RegisterHandler(
       "Recorder",
       [&](const std::string& loc,
@@ -51,28 +60,69 @@ TEST(HandlerRegistryTest, CreateHandlerInvokesFactoryWithCorrectArgs) {
         return new DummyHandler();
       }));
 
-  // Prepare some dummy params
   std::unordered_map<std::string, std::string> params = {
       {"root", "./files"},
       {"foo", "bar"}
   };
 
-  // Create it
   RequestHandler* h = HandlerRegistry::CreateHandler("Recorder", "/test", params);
   ASSERT_NE(h, nullptr);
   delete h;
 
-  // Verify factory saw exactly what we passed in
   EXPECT_EQ(seenLocation, "/test");
   EXPECT_EQ(seenParams.size(), 2u);
   EXPECT_EQ(seenParams.at("root"), "./files");
   EXPECT_EQ(seenParams.at("foo"), "bar");
 }
 
+// Looking up an unknown handler name should throw a runtime_error.
 TEST(HandlerRegistryTest, CreateHandlerUnknownNameThrows) {
-  // Lookup of an unregistered name should throw
   EXPECT_THROW(
     HandlerRegistry::CreateHandler("DoesNotExist", "/", {}),
     std::runtime_error
   );
+}
+
+// -----------------------------------------------------------------------------
+// Built-in handler registration
+// -----------------------------------------------------------------------------
+
+// EchoHandler should have auto-registered itself at load time.
+TEST(HandlerRegistryTest, EchoHandlerIsRegistered) {
+  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(EchoHandler::kName));
+}
+
+// We should be able to create an EchoHandler via the registry.
+TEST(HandlerRegistryTest, CreateEchoHandlerViaRegistry) {
+  RequestHandler* raw =
+    HandlerRegistry::CreateHandler(EchoHandler::kName, "/echo", {});
+  ASSERT_NE(raw, nullptr);
+
+  auto* eh = dynamic_cast<EchoHandler*>(raw);
+  EXPECT_NE(eh, nullptr);
+  delete raw;
+}
+// StaticHandler should have auto-registered itself at load time.
+TEST(HandlerRegistryTest, StaticHandlerIsRegistered) {
+  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(StaticHandler::kName));
+}
+
+// We should be able to create a StaticHandler via the registry.
+TEST(HandlerRegistryTest, CreateStaticHandlerViaRegistry) {
+  std::unordered_map<std::string,std::string> params = {{"root","."}};
+  RequestHandler* raw =
+    HandlerRegistry::CreateHandler(StaticHandler::kName, "/static", params);
+  ASSERT_NE(raw, nullptr);
+  auto* sh = dynamic_cast<StaticHandler*>(raw);
+  EXPECT_NE(sh, nullptr);
+  delete raw;
+}
+
+// Each call to CreateHandler must return a new, distinct instance.
+TEST(HandlerRegistryTest, CreateHandlerReturnsDistinctInstances) {
+  auto* a = HandlerRegistry::CreateHandler(EchoHandler::kName, "/echo", {});
+  auto* b = HandlerRegistry::CreateHandler(EchoHandler::kName, "/echo", {});
+  EXPECT_NE(a, b);
+  delete a;
+  delete b;
 }

@@ -5,38 +5,29 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
-#include <memory>
 #include "request_handler.h"
 
 class HandlerRegistry {
 public:
-  // factory signature: (configured location,  param-map) → new handler
-  using RequestHandlerFactory =
-    std::function<RequestHandler*(const std::string& location,
-                                  const std::unordered_map<std::string,std::string>& params)>;
+    // Factory signature: (location prefix, parsed params) → new RequestHandler*
+    using RequestHandlerFactory = 
+        std::function<RequestHandler*(const std::string& /*location*/,
+                                      const std::unordered_map<std::string, std::string>& /*params*/)>;
 
-  // register under the handler’s “kName”
-  static bool RegisterHandler(const std::string& name, RequestHandlerFactory factory);
+    // Register a factory under a unique name. Returns false if already present.
+    static bool RegisterHandler(const std::string& name, RequestHandlerFactory factory);
 
-  // look up by name, invoke factory
-  static RequestHandler* CreateHandler(const std::string& name,
-                                       const std::string& location,
-                                       const std::unordered_map<std::string,std::string>& params);
+    // Instantiate a handler by name. Throws std::runtime_error if unknown.
+    static RequestHandler* CreateHandler(const std::string& name,
+                                         const std::string& location,
+                                         const std::unordered_map<std::string, std::string>& params);
+
+    // Check if any factory is registered under this name.
+    static bool HasHandlerFor(const std::string& name);
 
 private:
-  static std::unordered_map<std::string,RequestHandlerFactory>& registry();
+    // Returns the singleton map of name→factory
+    static std::unordered_map<std::string, RequestHandlerFactory>& registry();
 };
-
-// at static‐init time this will run and register the factory
-#define REGISTER_HANDLER(HandlerClass)                              \
-  namespace {                                                       \
-    const bool _reg_##HandlerClass =                                \
-      HandlerRegistry::RegisterHandler(                             \
-        HandlerClass::kName,                                        \
-        [](const std::string& loc,                                  \
-           const std::unordered_map<std::string,std::string>& args) \
-          { return HandlerClass::Init(loc, args); }                \
-      );                                                            \
-  }
 
 #endif  // HANDLER_REGISTRY_H

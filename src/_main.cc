@@ -16,10 +16,11 @@
 #include "config_parser.h"
 #include "server.h"
 #include "session.h"
-#include "logger.h"          // ← existing logging facility
+#include "logger.h"
 #include "router.h"
 #include "echo_handler.h"
 #include "static_handler.h"
+#include "handler_registry.h"
 
 using boost::asio::ip::tcp;
 
@@ -67,23 +68,33 @@ int main(int argc, char* argv[]) {
     /* ───────────── Build router ───────────────── */
     Router router;
     for (const auto& route : routes) {
-      if (route.handler_type == "EchoHandler") {
-        router.add_route(route.path, std::make_unique<EchoHandler>());
+      // Make sure someone actually registered this handler
+      if (!HandlerRegistry::HasHandlerFor(route.handler_type)) {
+        Logger::log_error("Unknown handler type: " + route.handler_type);
+        return 1;
       }
-      else if (route.handler_type == "StaticHandler") {
-        auto it = route.params.find("root");
-        if (it == route.params.end()) {
-          std::cerr << "Static handler missing root directory\n";
-          Logger::log_error("Static handler missing root directory for path " +
-                            route.path);
-          return 1;
-        }
-        StaticHandler::configure(route.path, it->second);
-        router.add_route(route.path, std::make_unique<StaticHandler>());
-      }
-      // (Extend here for new handler types.)
-    }
 
+      // Log that we're about to instantiate it
+      Logger::log_info(
+        "Instantiating handler '" + route.handler_type +
+        "' for location '" + route.path + "'"
+      );
+
+      // Build a small factory that closes over the handler name
+      Router::Factory factory = [name = route.handler_type](
+          const std::string& loc,
+          const std::unordered_map<std::string, std::string>& prms
+      ) {
+        return HandlerRegistry::CreateHandler(name, loc, prms);
+      };
+
+      // Register it with the router, deferring actual instantiation
+      router.add_route(
+        route.path,
+        factory,
+        route.params
+      );
+    }
     /* ───────────── Start server ───────────────── */
     Logger::log_server_startup(port);
 
