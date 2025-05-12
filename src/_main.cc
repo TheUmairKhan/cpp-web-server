@@ -20,6 +20,7 @@
 #include "router.h"
 #include "echo_handler.h"
 #include "static_handler.h"
+#include "not_found_handler.h"
 #include "handler_registry.h"
 
 using boost::asio::ip::tcp;

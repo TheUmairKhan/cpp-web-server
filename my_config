@@ -1,8 +1,7 @@
 # Echo-server configuration
 port 8080;
 
-location / EchoHandler {
-}
+#Route paths must be ordered(most to least specific) due to longest-prefix matching
 
 location /echo EchoHandler {
 }
@@ -13,4 +12,7 @@ location /static StaticHandler {
 
 location /public StaticHandler {
     root ../../www/static;
+}
+
+location / NotFoundHandler {
 }

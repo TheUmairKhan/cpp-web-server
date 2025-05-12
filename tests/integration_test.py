@@ -52,13 +52,13 @@ def raw(port: int, request: str) -> str:
 
 # ───── expected replies ──────────────────────────────────────────────────────
 def echo_200(port: int) -> str:
-    req = f"GET / HTTP/1.1\nHost: 127.0.0.1:{port}\n\n"
-    ln  = len(req) + req.count("\n")
+    req = f"GET /echo HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"
+    ln = len(req)
     return ( "HTTP/1.1 200 OK\n"
              "Content-Type: text/plain\n"
              f"Content-Length: {ln}\n"
              "Connection: close\n"
-             "\n" + req )
+             "\n" + req.replace("\r\n", "\n") )
 
 def file_200(body: str, ctype="text/plain") -> str:
     return ( "HTTP/1.1 200 OK\n"
@@ -74,6 +74,14 @@ BAD_REQUEST_400 = textwrap.dedent("""\
     Connection: close
 
     Bad Request""").replace("\r\n", "\n")
+
+NOT_FOUND_404 = textwrap.dedent("""\
+    HTTP/1.1 404 Not Found
+    Content-Type: text/plain
+    Content-Length: 72
+    Connection: close
+
+    404 Not Found: The requested resource could not be found on this server.""").replace("\r\n", "\n")
 
 BAD_REQUEST_404 = textwrap.dedent("""\
 HTTP/1.1 404 Not Found
@@ -118,7 +126,7 @@ def main() -> int:
         cfg.write_text(textwrap.dedent(f"""\
             port {port};
 
-            location / EchoHandler {{
+            location /echo EchoHandler {{
             }}
 
             location /static StaticHandler {{
@@ -127,6 +135,10 @@ def main() -> int:
 
             location /public StaticHandler {{
                 root {stat_root};
+            }}
+
+            #Handle requests that don't match any other handler with 404
+            location / NotFoundHandler {{
             }}
         """))
 
@@ -143,9 +155,9 @@ def main() -> int:
                 return 1
 
             cases = [
-                Case("echo /",
+                Case("echo",
                      lambda p: raw(p,
-                       f"GET / HTTP/1.1\r\nHost: 127.0.0.1:{p}\r\n\r\n"),
+                       f"GET /echo HTTP/1.1\r\nHost: 127.0.0.1:{p}\r\n\r\n"),
                      echo_200),
                 Case("static file",
                      lambda p: curl(f"http://127.0.0.1:{p}/static/hello.txt"),
@@ -153,7 +165,7 @@ def main() -> int:
                 Case("bad verb",
                      lambda p: raw(p,
                        f"BAD / HTTP/1.1\r\nHost: 127.0.0.1:{p}\r\n\r\n"),
-                     BAD_REQUEST_400),
+                     NOT_FOUND_404),
                 Case("static HTML file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/index.html"),
                     lambda _p: file_200(html_body, ctype="text/html")),
@@ -172,6 +184,14 @@ def main() -> int:
                 Case("unknown file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/missing"),
                     BAD_REQUEST_404),
+
+                #Test paths that should fall through to the NotFoundHandler at '/'
+                Case("root path falls through to NotFoundHandler",
+                    lambda p: curl(f"http://127.0.0.1:{p}/"),
+                    NOT_FOUND_404),
+                Case("unmapped path falls through to NotFoundHandler",
+                    lambda p: curl(f"http://127.0.0.1:{p}/this_path_does_not_exist"),
+                    NOT_FOUND_404),
             ]
 
             for c in cases:

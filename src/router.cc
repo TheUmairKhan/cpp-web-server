@@ -30,9 +30,12 @@ Response Router::handle_request(const Request& request) const {
     }
   }
 
+  //Expect the NotFoundHandler to be registered at '/'
+  //If no match is found, we have a configuration error
   if (!best) {
-    return Response(request.get_version(), 404,
-                    "text/plain", 9, "close", "Not Found");
+    return Response(request.get_version(), 500, // Returns a 500 Internal Server Error in this case
+                   "text/plain", 32, "close", 
+                   "Server Error: No handlers registered");
   }
 
   // **per-request** instantiate, use, then destroy:

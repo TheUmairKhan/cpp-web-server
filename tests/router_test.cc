@@ -5,6 +5,7 @@
 #include "handler_registry.h"
 #include "echo_handler.h"
 #include "static_handler.h"
+#include "not_found_handler.h"
 #include "request.h"
 #include "response.h"
 
@@ -107,9 +108,30 @@ TEST_F(RouterTest, HandleEchoRequest) {
 }
 
 // -----------------------------------------------------------------------------
+// Test: NotFoundHandlerFallback
+//
+// Verify that when NotFoundHandler is configured at the root path,
+// it handles requests that don't match other handlers.
+// -----------------------------------------------------------------------------
+TEST_F(RouterTest, NotFoundHandlerFallback) {
+  router_->add_route("/echo", make_factory(EchoHandler::kName), {});
+  router_->add_route("/static", make_factory(StaticHandler::kName), 
+                    {{"root", temp_dir_.string()}});
+  router_->add_route("/", make_factory(NotFoundHandler::kName), {});
+  std::string req = "GET /unknown/path HTTP/1.1\r\n\r\n";
+  Response resp = router_->handle_request(Request(req));
+  
+  auto s = resp.to_string();
+  auto p = s.find("\r\n\r\n");
+  ASSERT_NE(p, std::string::npos);
+  EXPECT_EQ(resp.get_status_code(), 404);
+  EXPECT_EQ(s.substr(p+4), "404 Not Found: The requested resource could not be found on this server.");
+}
+
+// -----------------------------------------------------------------------------
 // Test: HandleBadRequest
 //
-// A request for an unregistered prefix should return 404 Not Found.
+// A request for an unregistered prefix should return 500 Internal Server Error.
 // -----------------------------------------------------------------------------
 TEST_F(RouterTest, HandleBadRequest) {
   std::string req = "GET /unknown/bad HTTP/1.1\r\n\r\n";
@@ -117,7 +139,8 @@ TEST_F(RouterTest, HandleBadRequest) {
   auto s = resp.to_string();
   auto p = s.find("\r\n\r\n");
   ASSERT_NE(p, std::string::npos);
-  EXPECT_EQ(s.substr(p+4), "Not Found");
+  EXPECT_EQ(resp.get_status_code(), 500);
+  EXPECT_EQ(s.substr(p+4), "Server Error: No handlers registered");
 }
 
 // -----------------------------------------------------------------------------

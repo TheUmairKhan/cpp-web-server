@@ -45,7 +45,8 @@ add_library(echoserver_lib
   src/response.cc
   src/echo_handler.cc
   src/static_handler.cc
-  src/router.cc          # Add this line
+  src/not_found_handler.cc
+  src/router.cc
   src/logger.cc
   src/handler_registry.cc
 )
@@ -100,6 +101,7 @@ add_executable(unit_tests
   tests/request_test.cc
   tests/echo_handler_test.cc
   tests/static_handler_test.cc
+  tests/not_found_handler_test.cc
   tests/router_test.cc
   tests/logger_test.cc
   tests/response_test.cc

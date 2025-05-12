@@ -30,5 +30,6 @@ const std::unordered_map<int, std::string> Response::status_messages_ = {
     {200, "200 OK"},
     {400, "400 Bad Request"},
     {403, "403 Forbidden"},
-    {404, "404 Not Found"}
+    {404, "404 Not Found"},
+    {500, "500 Internal Server Error"}
 };
