@@ -20,6 +20,7 @@
 #include "router.h"
 #include "echo_handler.h"
 #include "static_handler.h"
+#include "crud_api_handler.h"
 #include "not_found_handler.h"
 #include "handler_registry.h"
 
@@ -27,6 +28,8 @@ using boost::asio::ip::tcp;
 
 int main(int argc, char* argv[]) {
   try {
+
+
     /* ───────────── Logger bootstrap ───────────── */
     Logger::init_logger();
 

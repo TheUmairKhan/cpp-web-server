@@ -876,7 +876,7 @@ Add whatever extra functionality you need for your specific handler.
 ### Add the Handler to the Appropriate Config
 ``` Nginx
 location /my_handler MyHandler {
-    root ./var/whatever/you/want/to/do
+    root ./var/whatever/you/want/to/do;
 }
 ```
 - /my_handler is the URL route (must start with /)
@@ -902,6 +902,15 @@ add_library(echoserver_lib
   src/handler_registry.cc
   src/my_handler.cc                 # DO NOT FORGET TO ADD THIS OR YOUR NEW HANDLER WILL NOT BE COMPILED
 )
+```
+
+### Add the header file to _main.cc
+``` 
+#include "echo_handler.h"
+#include "static_handler.h"
+#include "my_handler.h"
+
+int main()...
 ```
 
 ### Rebuild and Run

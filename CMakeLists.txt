@@ -34,6 +34,15 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.50 REQUIRED COMPONENTS system log log_setup regex filesystem thread)
 message(STATUS "Boost version: ${Boost_VERSION}")
 
+#Import JSON library
+include(FetchContent)
+FetchContent_Declare(
+  json
+  URL  https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(json)
+
 # ─────────────────────────────────────────────────────────────
 #  Echo‑server static library
 # ─────────────────────────────────────────────────────────────
@@ -45,6 +54,7 @@ add_library(echoserver_lib
   src/response.cc
   src/echo_handler.cc
   src/static_handler.cc
+  src/crud_api_handler.cc
   src/not_found_handler.cc
   src/router.cc
   src/logger.cc
@@ -69,6 +79,7 @@ target_link_libraries(echoserver_lib
     Boost::log
     Boost::filesystem
     Boost::thread
+    nlohmann_json::nlohmann_json
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -101,6 +112,7 @@ add_executable(unit_tests
   tests/request_test.cc
   tests/echo_handler_test.cc
   tests/static_handler_test.cc
+  tests/crud_api_handler_test.cc
   tests/not_found_handler_test.cc
   tests/router_test.cc
   tests/logger_test.cc

@@ -14,5 +14,9 @@ location /public StaticHandler {
     root ./var/www/static;
 }
 
+location /api CrudApiHandler {
+    root ./var/www/api_data;
+}
+
 location / NotFoundHandler {
 }
