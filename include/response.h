@@ -14,7 +14,7 @@ class Response {
                       std::string body);
 
     // Returns string of response
-    std::string to_string();
+    std::string to_string() const;
 
     // Returns status code
     int get_status_code() const;

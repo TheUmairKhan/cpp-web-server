@@ -34,15 +34,6 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.50 REQUIRED COMPONENTS system log log_setup regex filesystem thread)
 message(STATUS "Boost version: ${Boost_VERSION}")
 
-#Import JSON library
-include(FetchContent)
-FetchContent_Declare(
-  json
-  URL  https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(json)
-
 # ─────────────────────────────────────────────────────────────
 #  Echo‑server static library
 # ─────────────────────────────────────────────────────────────
@@ -79,7 +70,6 @@ target_link_libraries(echoserver_lib
     Boost::log
     Boost::filesystem
     Boost::thread
-    nlohmann_json::nlohmann_json
 )
 
 # ─────────────────────────────────────────────────────────────

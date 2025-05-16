@@ -37,6 +37,8 @@ Request::Request(const std::string& request) {
   // If end of request, only remaining part will be \r\n or \n
   while (req != "\r\n" && req != "\n" && !req.empty()) {
     getLine(req, line);
+    if (line.empty()) break;
+
     auto split = line.find(":");
     if (split == std::string::npos) { valid_request_ = false; return; }
     std::string header_name = line.substr(0, split);
@@ -46,7 +48,21 @@ Request::Request(const std::string& request) {
   }
   raw_text_ = request;
   length_ = request.length();
+
+  // Extract body from request (everything after headers)
+  size_t header_end = request.find("\r\n\r\n");
+  if (header_end != std::string::npos) {
+    body_ = request.substr(header_end + 4);  // Skip over \r\n\r\n
+  } else {
+    header_end = request.find("\n\n");
+    if (header_end != std::string::npos) {
+      body_ = request.substr(header_end + 2);  // Skip over \n\n
+    }
+  }
+
   valid_request_ = true;
+
+  
 }
 
 std::string Request::get_method() const { return method_; }
@@ -60,6 +76,8 @@ std::string Request::get_header(const std::string& header_name) const {
       return headers_.at(header_name);
     return "";
 }
+
+std::string Request::get_body() const { return body_; }
 
 std::string Request::to_string() const { return raw_text_; }
 

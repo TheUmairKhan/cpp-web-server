@@ -15,7 +15,7 @@ Response::Response(const std::string& version,
     status_line_ = version + " " + status_messages_.at(status_code);
 }
 
-std::string Response::to_string() {
+std::string Response::to_string() const {
     std::string response = status_line_ + "\r\n";
     response += "Content-Type: " + content_type_ + "\r\n";
     response += "Content-Length: " + std::to_string(content_length_) + "\r\n";

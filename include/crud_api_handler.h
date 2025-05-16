@@ -6,8 +6,11 @@
 #include <string>
 #include <filesystem>
 #include <stdexcept>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 namespace fs = std::filesystem;
+namespace pt = boost::property_tree;
 
 class CrudApiHandler : public RequestHandler {
 public:
@@ -33,9 +36,18 @@ private:
   // The absolute filesystem root we were configured with.
   std::string fs_root_;
 
+  std::string entity_;
+  int entity_id_;
+
   // helpers
   std::string resolve_path(const std::string& url_path) const;
   bool is_valid_json(const std::string& body) const;
+  std::string parse_for_entity(const std::string& url_path) const;
+  std::string parse_for_id(const std::string& url_path) const;
+  int generate_unique_id(const std::string& entity_type) const;
+
+  Response handle_post(const Request& request, const std::string& entity_type);
+
 };
 
 // one-time registration at load time:

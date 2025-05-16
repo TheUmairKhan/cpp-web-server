@@ -27,6 +27,9 @@ class Request {
     // header getter
     std::string get_header(const std::string& header_name) const;
 
+    // body getter
+    std::string get_body() const;
+
     // Returns string representation of request
     std::string to_string() const;
 
@@ -40,6 +43,7 @@ class Request {
     std::string method_;
     std::string url_;
     std::string http_version_;
+    std::string body_;
     std::unordered_map<std::string, std::string> headers_;
     std::string raw_text_;
     bool valid_request_;
