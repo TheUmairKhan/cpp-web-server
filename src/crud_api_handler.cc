@@ -178,6 +178,74 @@ Response CrudApiHandler::handle_post(const Request& request, const std::string& 
     return Response(request.get_version(), 200, "application/json", response_body_str.size(), "close", response_body_str);
 }
 
+Response CrudApiHandler::handle_get(const Request& request, const std::string& entity_type, const std::string& entity_id) {
+  // check that entity is valid
+  fs::path entity_path = fs::path(fs_root_) / entity_type;
+  try {
+    if (!fs::is_directory(entity_path) || !fs::exists(entity_path)) {
+      std::string b = "400 Bad Request: Entity type does not exist";
+      return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+    }
+  } catch (const fs::filesystem_error& e) {
+    std::string b = "500 Internal Server Error: Filesystem error finding directory";
+    return Response(request.get_version(), 500, "text/plain", b.size(), "close", b);
+  }
+
+  // ID provided, retrieve data
+  if (entity_id != "") {
+    // get data with entity/ID
+    fs::path path_to_id = entity_path / entity_id;
+    if (fs::exists(path_to_id)) {
+      // read file content and return ID data
+      try {
+        std::ifstream file(path_to_id);
+        if (!file) {
+          throw std::runtime_error("File exists but could not be opened");
+        }
+
+        std::string content((std::istreambuf_iterator<char>(file)),
+                            std::istreambuf_iterator<char>());
+
+        return Response(request.get_version(), 200, "application/json", content.size(), "close", content);
+      } catch (const std::exception& e) {
+        std::string b = "500 Internal Server Error: Failed to read file";
+        return Response(request.get_version(), 500, "text/plain", b.size(), "close", b);
+      }
+    } else {
+      // ID does not exist within entity
+      std::string b = "400 Bad Request: ID does not exist";
+      return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+    }
+  } else { // no ID, return list of valid IDs
+    std::vector<int> current_ids = std::vector<int>();
+  
+    for (const auto& entry : fs::directory_iterator(entity_path)) {
+      if (entry.is_regular_file()) {
+        try {
+          int file_id = std::stoi(entry.path().filename().string());
+          current_ids.push_back(file_id);
+        } catch (...) {
+          // skip non number file names
+        }
+      }
+    }
+    // maintain numerical order of IDs
+    std::sort(current_ids.begin(), current_ids.end());
+
+    // build JSON array 
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < current_ids.size(); ++i) {
+        if (i > 0) oss << ", ";
+        oss << current_ids[i];
+    }
+    oss << "]";
+    std::string b = oss.str();
+        
+    return Response(request.get_version(), 200, "application/json", b.size(), "close", b);
+  }
+}
+
 // The actual request handler
 Response CrudApiHandler::handle_request(const Request& request) {
   auto method = request.get_method();
@@ -208,7 +276,7 @@ Response CrudApiHandler::handle_request(const Request& request) {
 
 
   if (method == "GET") {
-    //TODO
+    return handle_get(request, entity_type, entity_id);
   }
   else if (method == "POST") {
     return handle_post(request, entity_type);

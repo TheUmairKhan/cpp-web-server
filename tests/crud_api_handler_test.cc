@@ -38,9 +38,11 @@ protected:
         fs::remove_all(temp_dir_);
     }
 
-    void create_test_file(const std::string& name,
-                          const std::string& content) {
-        std::ofstream((temp_dir_ / name).c_str()) << content;
+    void create_test_file(const std::string& name, const std::string& content) {
+        fs::path full_path = temp_dir_ / name;
+        fs::create_directories(full_path.parent_path());
+        std::ofstream ofs(full_path);
+        ofs << content;
     }
 
     fs::path temp_dir_;
@@ -118,3 +120,106 @@ TEST_F(CrudApiHandlerTest, PostMissingEntityReturns400) {
     EXPECT_TRUE(extract_body(response).find("Missing entity type") != std::string::npos);
 }
 
+TEST_F(CrudApiHandlerTest, GetValidEntityReturns200) {
+    std::string entity = "user";
+    std::string id = "1";
+    std::string content = R"({"username": "testuser"})";
+
+    // Create a test file for the entity
+    create_test_file(entity + "/" + id, content);
+
+    std::string request_text = 
+        "GET /api/" + entity + "/" + id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify status
+    EXPECT_EQ(response.get_status_code(), 200);
+
+    std::string response_body = extract_body(response);
+    EXPECT_EQ(response_body, content);
+}
+
+TEST_F(CrudApiHandlerTest, GetInvalidEntityReturns400) {
+    std::string entity = "user";
+    std::string invalid_entity = "shoe";
+    std::string id = "1";
+    std::string content = R"({"username": "testuser"})";
+
+    // Create a test file for the entity
+    create_test_file(entity + "/" + id, content);
+
+    std::string request_text = 
+        "GET /api/" + invalid_entity + "/" + id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify status
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Entity type does not exist") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, GetNonExistentIDReturns400) {
+    std::string entity = "user";
+    std::string id = "1";
+    std::string invalid_id = "2";
+    std::string content = R"({"username": "testuser"})";
+
+    // Create a test file for the entity
+    create_test_file(entity + "/" + id, content);
+
+    std::string request_text = 
+        "GET /api/" + entity + "/" + invalid_id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify status
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("ID does not exist") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, GetListAllEntitiesReturns200) {
+    std::string entity = "user";
+    std::string content = R"([1, 2, 3])";  // Simulated entity IDs in an array
+
+    // Create test files for the entity
+    create_test_file(entity + "/1", "{\"username\": \"user1\"}");
+    create_test_file(entity + "/2", "{\"username\": \"user2\"}");
+    create_test_file(entity + "/3", "{\"username\": \"user3\"}");
+
+    std::string request_text = 
+        "GET /api/" + entity + " HTTP/1.1\r\n\r\n"; // Get all entities
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify status
+    EXPECT_EQ(response.get_status_code(), 200);
+
+    std::string response_body = extract_body(response);
+    std::cout << response_body;
+    EXPECT_EQ(response_body, content);
+}
+
+TEST_F(CrudApiHandlerTest, GetListInvalidEntityReturns400) {
+    std::string entity = "user";
+    std::string invalid_entity = "shoe";
+    std::string id = "1";
+    std::string content = R"({"username": "testuser"})";
+
+    // Create a test file for the entity
+    create_test_file(entity + "/" + id, content);
+
+    std::string request_text = 
+        "GET /api/" + invalid_entity + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify status
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Entity type does not exist") != std::string::npos);
+}
