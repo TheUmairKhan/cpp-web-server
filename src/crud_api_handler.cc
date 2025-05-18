@@ -246,6 +246,55 @@ Response CrudApiHandler::handle_get(const Request& request, const std::string& e
   }
 }
 
+Response CrudApiHandler::handle_put(const Request& request, const std::string& entity_type, const std::string& entity_id) {
+  // verify body is present in request
+  const std::string& body = request.get_body();
+  if (body.empty()) {
+    std::string b = "400 Bad Request: Missing request body";
+    return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+  }
+
+  // verify request body is valid json
+  if (!is_valid_json(body)) {
+    std::string b = "400 Bad Request: Invalid JSON in request body";
+    return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+  }
+
+  // verify ID is provided
+  if (entity_id == "") {
+    std::string b = "400 Bad Request: No ID provided";
+    return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+  }
+
+  // add entity if it doesn't exist
+  fs::path entity_path = fs::path(fs_root_) / entity_type;
+  try {
+    fs::create_directories(entity_path);
+  } catch (const fs::filesystem_error& e) {
+    std::string b = "500 Internal Server Error: Could not create directory";
+    return Response(request.get_version(), 400, "text/plain", b.size(), "close", b);
+  }
+
+  fs::path file_path = entity_path / entity_id;
+  //write json body into file system
+  try {
+    std::ofstream ofs(file_path);
+    if (!ofs.is_open()) {
+      std::string b = "500 Internal Server Error: Could not open file for writing";
+      return Response(request.get_version(), 500, "text/plain", b.size(), "close", b);
+    }
+    ofs << body;
+    ofs.close();
+  } catch (const std::exception& e) {
+    std::string b = "500 Internal Server Error: Error writing to file";
+    return Response(request.get_version(), 500, "text/plain", b.size(), "close", b);
+  }
+
+  // return json with id of updated entity object
+  std::string b = "Entity created/updated successfully";
+  return Response(request.get_version(), 200, "text/plain", b.size(), "close", b);
+}
+
 // The actual request handler
 Response CrudApiHandler::handle_request(const Request& request) {
   auto method = request.get_method();
@@ -282,7 +331,7 @@ Response CrudApiHandler::handle_request(const Request& request) {
     return handle_post(request, entity_type);
   }
   else if (method == "PUT") {
-    //TODO
+    return handle_put(request, entity_type, entity_id);
   }
   else if (method == "DELETE") {
     //TODO

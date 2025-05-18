@@ -223,3 +223,104 @@ TEST_F(CrudApiHandlerTest, GetListInvalidEntityReturns400) {
     EXPECT_EQ(response.get_status_code(), 400);
     EXPECT_TRUE(extract_body(response).find("Entity type does not exist") != std::string::npos);
 }
+
+TEST_F(CrudApiHandlerTest, PutCreatesEntityWithSpecificID) {
+    std::string entity = "user";
+    std::string id = "42";
+    std::string body = R"({"username": "newuser"})";
+    std::string request_text = 
+        "PUT /api/" + entity + "/" + id + " HTTP/1.1\r\n" +
+        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
+        "Content-Type: application/json\r\n\r\n" +
+        body;
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 200);
+
+    fs::path expected_path = temp_dir_ / entity / id;
+    ASSERT_TRUE(fs::exists(expected_path));
+
+    std::ifstream ifs(expected_path);
+    std::string file_content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    EXPECT_EQ(file_content, body);
+}
+
+TEST_F(CrudApiHandlerTest, PutUpdatesExistingEntity) {
+    std::string entity = "user";
+    std::string id = "1";
+    std::string original_content = R"({"username": "olduser"})";
+    std::string updated_content = R"({"username": "updateduser"})";
+
+    create_test_file(entity + "/" + id, original_content);
+
+    std::string request_text = 
+        "PUT /api/" + entity + "/" + id + " HTTP/1.1\r\n" +
+        "Content-Length: " + std::to_string(updated_content.size()) + "\r\n" +
+        "Content-Type: application/json\r\n\r\n" +
+        updated_content;
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 200);
+
+    fs::path expected_path = temp_dir_ / entity / id;
+    ASSERT_TRUE(fs::exists(expected_path));
+
+    std::ifstream ifs(expected_path);
+    std::string file_content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    EXPECT_EQ(file_content, updated_content);
+}
+
+TEST_F(CrudApiHandlerTest, PutInvalidJsonReturns400) {
+    std::string entity = "user";
+    std::string id = "1";
+    std::string body = R"({invalid json)";
+    
+    std::string request_text = 
+        "PUT /api/" + entity + "/" + id + " HTTP/1.1\r\n" +
+        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
+        "Content-Type: application/json\r\n\r\n" +
+        body;
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Invalid JSON in request body") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, PutMissingIDReturns400) {
+    std::string body = R"({"some": "data"})";
+    std::string entity = "user";
+    std::string request_text = 
+        "PUT /api/" + entity + " HTTP/1.1\r\n" +
+        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
+        "Content-Type: application/json\r\n\r\n" +
+        body;
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("No ID provided") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, PutMissingBodyReturns400) {
+    std::string body = R"({"some": "data"})";
+    std::string entity = "user";
+    std::string id = "1";
+
+    std::string request_text = 
+        "PUT /api/" + entity + "/" + id + " HTTP/1.1\r\n" +
+        "Content-Length: " + std::to_string(body.size()) + "\r\n" +
+        "Content-Type: application/json\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Missing request body") != std::string::npos);
+}

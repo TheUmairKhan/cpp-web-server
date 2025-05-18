@@ -48,7 +48,7 @@ private:
 
   Response handle_post(const Request& request, const std::string& entity_type);
   Response handle_get(const Request& request, const std::string& entity_type, const std::string& entity_id);
-
+  Response handle_put(const Request& request, const std::string& entity_type, const std::string& entity_id);
 };
 
 // one-time registration at load time:
