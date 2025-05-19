@@ -46,9 +46,13 @@ private:
   std::string parse_for_id(const std::string& url_path) const;
   int generate_unique_id(const std::string& entity_type) const;
 
+  Response make_error_response(const Request& request, int status_code, const std::string& message) const;
+  Response make_success_response(const Request& request, const std::string& response_type, const std::string& message) const;
+
   Response handle_post(const Request& request, const std::string& entity_type);
   Response handle_get(const Request& request, const std::string& entity_type, const std::string& entity_id);
   Response handle_put(const Request& request, const std::string& entity_type, const std::string& entity_id);
+  Response handle_delete(const Request& request, const std::string& entity_type, const std::string& entity_id);
 };
 
 // one-time registration at load time:

@@ -324,3 +324,76 @@ TEST_F(CrudApiHandlerTest, PutMissingBodyReturns400) {
     EXPECT_EQ(response.get_status_code(), 400);
     EXPECT_TRUE(extract_body(response).find("Missing request body") != std::string::npos);
 }
+
+TEST_F(CrudApiHandlerTest, DeleteEntityByID) {
+    std::string entity = "user";
+    std::string id = "123";
+    std::string content = R"({"username": "deleteuser"})";
+
+    // Create the entity file to delete
+    create_test_file(entity + "/" + id, content);
+
+    std::string request_text = 
+        "DELETE /api/" + entity + "/" + id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    // Verify deletion succeeded
+    EXPECT_EQ(response.get_status_code(), 200);
+    EXPECT_FALSE(fs::exists(temp_dir_ / entity / id));
+}
+
+TEST_F(CrudApiHandlerTest, DeleteNonExistentIDReturns404) {
+    std::string entity = "user";
+    std::string non_existent_id = "999";
+
+    std::string request_text = 
+        "DELETE /api/" + entity + "/" + non_existent_id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 404);
+    EXPECT_TRUE(extract_body(response).find("File does not exist") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, DeleteFromInvalidEntityReturns404) {
+    std::string invalid_entity = "invalid";
+    std::string id = "1";
+
+    std::string request_text = 
+        "DELETE /api/" + invalid_entity + "/" + id + " HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 404);
+    EXPECT_TRUE(extract_body(response).find("File does not exist") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, DeleteMissingIDReturns400) {
+    std::string entity = "user"; 
+    std::string request_text = "DELETE /api/" + entity + "/ HTTP/1.1\r\n\r\n";
+
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Missing entity type or ID") != std::string::npos);
+}
+
+TEST_F(CrudApiHandlerTest, DeleteTargetIsNotAFileReturns400) {
+    std::string entity = "user";
+    std::string id = "directory_target";
+
+    fs::path entity_dir = temp_dir_ / entity;
+    fs::create_directories(entity_dir / id);
+
+    std::string request_text = "DELETE /api/" + entity + "/" + id + " HTTP/1.1\r\n\r\n";
+    Request request(request_text);
+    Response response = handler_->handle_request(request);
+
+    EXPECT_EQ(response.get_status_code(), 400);
+    EXPECT_TRUE(extract_body(response).find("Target is not a file") != std::string::npos);
+}
