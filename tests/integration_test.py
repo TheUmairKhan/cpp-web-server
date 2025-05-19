@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end checks for the web-server with echo + static support."""
 from __future__ import annotations
-import os, signal, socket, subprocess, sys, tempfile, textwrap, time
+import os, signal, socket, subprocess, sys, tempfile, textwrap, time, json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -49,6 +49,50 @@ def raw(port: int, request: str) -> str:
         while chunk := sock.recv(4096):
             data += chunk
     return data.replace(b"\r\n", b"\n").decode()
+
+def test_crud_sequence(url: str, create_data: str) -> str:
+    #Create entity with POST
+    res_create = subprocess.run(
+        ["curl", "-sS", "-X", "POST", url, "-d", create_data,
+         "-H", "Content-Type: application/json"],
+        capture_output=True, text=True
+    )
+    #Check entity creation
+    assert res_create.returncode == 0, f"POST failed: {res_create.stderr}"
+    response_body = res_create.stdout.split("\r\n\r\n")[-1]
+    res_json = json.loads(response_body)
+
+    #Check response id is valid 
+    assert "id" in res_json, f"Missing ID in response: {response_body}"
+    id_ = res_json["id"]
+
+    #Retrieve the entity with GET
+    res_get = subprocess.run(
+        ["curl", "-sS", "-X", "GET", f"{url}/{id_}"],
+        capture_output=True, text=True
+    )
+    #Check entity retrieval
+    assert res_get.returncode == 0, f"GET failed: {res_get.stderr}"
+    body = res_get.stdout.split("\r\n\r\n")[-1]
+    #Check response matches data
+    assert body.strip() == create_data, f"GET data mismatch: {body.strip()} != {create_data}"
+
+    #Delete the entity
+    res_delete = subprocess.run(
+        ["curl", "-sS", "-X", "DELETE", f"{url}/{id_}"],
+        capture_output=True, text=True
+    )
+    #Check delete validity
+    assert res_delete.stdout.find("200 OK") == 0, f"DELETE failed: {res_delete.stderr}"
+
+    #Attempt to retrieve again and expect 400
+    res_get2 = subprocess.run(
+        ["curl", "-sS", "-X", "GET", f"{url}/{id_}"],
+        capture_output=True, text=True
+    )
+    #Output should be 400 since entity was deleted
+    assert res_get2.stdout.find("400 Bad Request") == 0, f"GET failed: {res_get2.stderr}"
+    return res_get2.stdout.replace("\r\n", "\n")
 
 # ───── expected replies ──────────────────────────────────────────────────────
 def echo_200(port: int) -> str:
@@ -114,9 +158,12 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         stat_root = Path(tmp) / "static"
         stat_root.mkdir()
+        data_root = Path(tmp) / "crud"
+        data_root.mkdir()
         txt_body = "Hello, integration!"
         html_body = "<html><body><h1>Test Page</h1></body></html>"
         jpg_bytes = b"\xff\xd8\xff\xe0" + b"FakeJPEG" + b"\xff\xd9"
+        json_body = '{"message": "Hello, IntegrationWebserver!"}'
 
         (stat_root / "hello.txt").write_text(txt_body)
         (stat_root / "index.html").write_text(html_body)
@@ -135,6 +182,10 @@ def main() -> int:
 
             location /public StaticHandler {{
                 root {stat_root};
+            }}
+
+            location /api CrudApiHandler {{
+                root {data_root};
             }}
 
             #Handle requests that don't match any other handler with 404
@@ -184,6 +235,9 @@ def main() -> int:
                 Case("unknown file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/missing"),
                     BAD_REQUEST_404),
+                Case("Crud entity creation, retrieval, deletion",
+                    lambda p: test_crud_sequence(f"http://127.0.0.1:{p}/api/test.json", json_body),
+                    "400 Bad Request: ID does not exist"), 
 
                 #Test paths that should fall through to the NotFoundHandler at '/'
                 Case("root path falls through to NotFoundHandler",
