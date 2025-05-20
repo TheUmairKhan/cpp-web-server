@@ -50,6 +50,8 @@ add_library(echoserver_lib
   src/router.cc
   src/logger.cc
   src/handler_registry.cc
+  src/real_filesystem.cc
+  src/mock_filesystem.cc
 )
 
 

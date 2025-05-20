@@ -3,6 +3,8 @@
 
 #include "request_handler.h"
 #include "handler_registry.h"
+#include "filesystem.h"
+#include "real_filesystem.h"
 #include <string>
 #include <filesystem>
 #include <stdexcept>
@@ -24,23 +26,24 @@ public:
       const std::string& location,
       const std::unordered_map<std::string, std::string>& params);
 
+  // Each handler instance needs exactly these two pieces of information:
+  CrudApiHandler(std::string url_prefix, std::string filesystem_root,
+                std::shared_ptr<FileSystemInterface> fs = std::make_shared<RealFileSystem>());
 
   Response handle_request(const Request& request) override;
 
 private:
-  // Each handler instance needs exactly these two pieces of information:
-  CrudApiHandler(std::string url_prefix, std::string filesystem_root);
-
   // The mount point (prefix) we were configured with.
   std::string prefix_;
   // The absolute filesystem root we were configured with.
   std::string fs_root_;
+  // The filesystem implementation to use
+  std::shared_ptr<FileSystemInterface> fs_impl_;
 
   std::string entity_;
   int entity_id_;
 
   // helpers
-  std::string resolve_path(const std::string& url_path) const;
   bool is_valid_json(const std::string& body) const;
   std::string parse_for_entity(const std::string& url_path) const;
   std::string parse_for_id(const std::string& url_path) const;

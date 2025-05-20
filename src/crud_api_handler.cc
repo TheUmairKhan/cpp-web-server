@@ -18,39 +18,23 @@ RequestHandler* CrudApiHandler::Init(
       "CrudApiHandler missing 'root' parameter for location " + location);
   }
 
+  // use default RealFileSystem implementation
+  auto fs_impl = std::make_shared<RealFileSystem>();
+
   // canonicalize the root on disk
   fs::path cfg = it->second;
   fs::path abs_root = cfg.is_absolute()
-    ? fs::canonical(cfg)
-    : fs::weakly_canonical(fs::read_symlink("/proc/self/exe").parent_path() / cfg);
+    ? fs_impl->canonical(cfg)
+    : fs_impl->weakly_canonical(fs::read_symlink("/proc/self/exe").parent_path() / cfg);
 
-  return new CrudApiHandler(location, abs_root.string());
+  return new CrudApiHandler(location, abs_root.string(), fs_impl);
 }
 
 // Constructor saves both pieces of information
-CrudApiHandler::CrudApiHandler(std::string url_prefix, std::string filesystem_root)
+CrudApiHandler::CrudApiHandler(std::string url_prefix, std::string filesystem_root, std::shared_ptr<FileSystemInterface> fs)
   : prefix_(std::move(url_prefix)),
-    fs_root_(std::move(filesystem_root)) {}
-
-// Build the real filesystem path, guard against traversal
-std::string CrudApiHandler::resolve_path(const std::string& url_path) const {
-  // strip off the URL prefix
-  if (url_path.rfind(prefix_,0)!=0) {
-    throw std::runtime_error("No static mount for this path");
-  }
-  std::string rest = url_path.substr(prefix_.size());
-  if (!rest.empty() && rest[0]=='/') rest.erase(0,1);
-
-  // canonicalize base and candidate
-  fs::path base = fs::canonical(fs_root_);
-  fs::path full = fs::weakly_canonical(base / rest);
-
-  // ensure full stays under base
-  if (full.generic_string().rfind(base.generic_string(),0)!=0) {
-    throw std::runtime_error("Path traversal attempt detected");
-  }
-  return full.string();
-}
+    fs_root_(std::move(filesystem_root)),
+    fs_impl_(std::move(fs)) {}
 
 bool CrudApiHandler::is_valid_json(const std::string& body) const {
   try {
@@ -105,12 +89,12 @@ int CrudApiHandler::generate_unique_id(const std::string& entity) const {
   fs::path entity_dir_path = fs::path(fs_root_) / entity;
   int max_id = 0;
 
-  if (fs::exists(entity_dir_path) && fs::is_directory(entity_dir_path)) {
-      for (const auto& entry : fs::directory_iterator(entity_dir_path)) {
-           if (entry.is_regular_file()) {
+  if (fs_impl_->exists(entity_dir_path) && fs_impl_->is_directory(entity_dir_path)) {
+      for (const auto& entry : fs_impl_->directory_entries(entity_dir_path)) {
+           if (fs_impl_->is_regular_file(entity_dir_path/entry)) {
                try {
                    // Attempt to convert filename to integer ID
-                   int file_id = std::stoi(entry.path().filename().string());
+                   int file_id = std::stoi(entry.string());
                    max_id = std::max(max_id, file_id);
                } catch (const std::invalid_argument& e) {
                    // Ignore files that are not valid integers
@@ -160,11 +144,11 @@ Response CrudApiHandler::handle_post(const Request& request, const std::string& 
     //Check if directory exists, create if not
     fs::path entity_dir_path = fs::path(fs_root_) / entity_type;
     try {
-        if (!fs::exists(entity_dir_path)) {
-            if (!fs::create_directories(entity_dir_path)) {
+        if (!fs_impl_->exists(entity_dir_path)) {
+            if (!fs_impl_->create_directories(entity_dir_path)) {
                 return make_error_response(request, 500, "500 Internal Server Error: Could not create entity directory");
             }
-        } else if (!fs::is_directory(entity_dir_path)) {
+        } else if (!fs_impl_->is_directory(entity_dir_path)) {
             return make_error_response(request, 500, "500 Internal Server Error: Entity path is not a directory");
         }
     } catch (const fs::filesystem_error& e) {
@@ -177,12 +161,9 @@ Response CrudApiHandler::handle_post(const Request& request, const std::string& 
 
     //write json body into file system
     try {
-        std::ofstream ofs(file_path);
-        if (!ofs.is_open()) {
+        if (!fs_impl_->write_file(file_path, request_body)) {
             return make_error_response(request, 500, "500 Internal Server Error: Could not open file for writing");
         }
-        ofs << request_body;
-        ofs.close();
     } catch (const std::exception& e) {
         return make_error_response(request, 500, "500 Internal Server Error: Error writing to file");
     }
@@ -202,7 +183,7 @@ Response CrudApiHandler::handle_get(const Request& request, const std::string& e
   // check that entity is valid
   fs::path entity_path = fs::path(fs_root_) / entity_type;
   try {
-    if (!fs::is_directory(entity_path) || !fs::exists(entity_path)) {
+    if (!fs_impl_->is_directory(entity_path) || !fs_impl_->exists(entity_path)) {
       return make_error_response(request, 400, "400 Bad Request: Entity type does not exist");
     }
   } catch (const fs::filesystem_error& e) {
@@ -213,17 +194,10 @@ Response CrudApiHandler::handle_get(const Request& request, const std::string& e
   if (entity_id != "") {
     // get data with entity/ID
     fs::path path_to_id = entity_path / entity_id;
-    if (fs::exists(path_to_id)) {
+    if (fs_impl_->exists(path_to_id)) {
       // read file content and return ID data
       try {
-        std::ifstream file(path_to_id);
-        if (!file) {
-          throw std::runtime_error("File exists but could not be opened");
-        }
-
-        std::string content((std::istreambuf_iterator<char>(file)),
-                            std::istreambuf_iterator<char>());
-
+        std::string content = fs_impl_->read_file(path_to_id);
         return make_success_response(request, "application/json", content);
       } catch (const std::exception& e) {
         return make_error_response(request, 500, "500 Internal Server Error: Failed to read file");
@@ -235,10 +209,10 @@ Response CrudApiHandler::handle_get(const Request& request, const std::string& e
   } else { // no ID, return list of valid IDs
     std::vector<int> current_ids = std::vector<int>();
   
-    for (const auto& entry : fs::directory_iterator(entity_path)) {
-      if (entry.is_regular_file()) {
+    for (const auto& entry : fs_impl_->directory_entries(entity_path)) {
+      if (fs_impl_->is_regular_file(entity_path / entry)) {
         try {
-          int file_id = std::stoi(entry.path().filename().string());
+          int file_id = std::stoi(entry.string());
           current_ids.push_back(file_id);
         } catch (...) {
           // skip non number file names
@@ -282,7 +256,7 @@ Response CrudApiHandler::handle_put(const Request& request, const std::string& e
   // add entity if it doesn't exist
   fs::path entity_path = fs::path(fs_root_) / entity_type;
   try {
-    fs::create_directories(entity_path);
+    fs_impl_->create_directories(entity_path);
   } catch (const fs::filesystem_error& e) {
     return make_error_response(request, 500, "500 Internal Server Error: Could not create directory");
   }
@@ -290,12 +264,9 @@ Response CrudApiHandler::handle_put(const Request& request, const std::string& e
   fs::path file_path = entity_path / entity_id;
   //write json body into file system
   try {
-    std::ofstream ofs(file_path);
-    if (!ofs.is_open()) {
+    if (!fs_impl_->write_file(file_path, body)) {
       return make_error_response(request, 500, "500 Internal Server Error: Could not open file for writing");
     }
-    ofs << body;
-    ofs.close();
   } catch (const std::exception& e) {
     return make_error_response(request, 500, "500 Internal Server Error: Error writing to file");
   }
@@ -316,15 +287,15 @@ Response CrudApiHandler::handle_delete(const Request& request, const std::string
   // try to delete file
   try {
       // if file does not exist
-      if (!fs::exists(entity_file_path)) {
+      if (!fs_impl_->exists(entity_file_path)) {
         return make_error_response(request, 404, "404 Not Found: File does not exist");
       }
       // if not a file
-      if (!fs::is_regular_file(entity_file_path)) {
+      if (!fs_impl_->is_regular_file(entity_file_path)) {
         return make_error_response(request, 400, "400 Bad Request: Target is not a file");
       }
       // remove file and path
-      fs::remove(entity_file_path);
+      fs_impl_->remove(entity_file_path);
 
       // return successful delete response
       return make_success_response(request, "text/plain", "200 OK: File deleted successfully");
@@ -339,24 +310,14 @@ Response CrudApiHandler::handle_request(const Request& request) {
 
   //get entity from web url and return errors if it doesn't exist
   std::string entity_type;
-  try {
-      entity_type = parse_for_entity(request.get_url());
-      if (entity_type.empty()) {
-        return make_error_response(request, 400, "400 Bad Request: Missing entity type in URL");
-      }
-  } catch (const std::exception& e) {
-    // Handle potential errors in parse_for_entity
-    return make_error_response(request, 400, "400 Bad Request: Invalid URL format");
+  entity_type = parse_for_entity(request.get_url());
+  if (entity_type.empty()) {
+    return make_error_response(request, 400, "400 Bad Request: Missing entity type in URL");
   }
 
-  //get ID similar to parsing entity
+  // get ID similar to parsing entity
   std::string entity_id;
-  try {
-    entity_id = parse_for_id(request.get_url());
-  }
-  catch (const std::exception& e) {
-    return make_error_response(request, 400, "400 Bad Request: Invalid URL format for ID");
-  }
+  entity_id = parse_for_id(request.get_url());
 
 
   if (method == "GET") {
@@ -374,3 +335,4 @@ Response CrudApiHandler::handle_request(const Request& request) {
 
   return make_error_response(request, 500, "500 Error: Handler Not Implemented");
 }
+
