@@ -15,7 +15,7 @@ location /public StaticHandler {
 }
 
 location /api CrudApiHandler {
-    root ./var/www/api_data;
+    root ./mnt/storage/crud;
 }
 
 location / NotFoundHandler {
