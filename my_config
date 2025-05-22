@@ -6,6 +6,10 @@ port 8080;
 location /echo EchoHandler {
 }
 
+location /sleep SleepHandler {
+    sleep_duration 3;
+}
+
 location /static StaticHandler {
     root ../../www/static;
 }

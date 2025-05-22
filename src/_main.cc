@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include <memory>
 #include <csignal>
+#include <thread>
 #include "config_parser.h"
 #include "server.h"
 #include "session.h"
@@ -22,6 +23,7 @@
 #include "static_handler.h"
 #include "crud_api_handler.h"
 #include "not_found_handler.h"
+#include "sleep_handler.h"
 #include "handler_registry.h"
 
 using boost::asio::ip::tcp;
@@ -121,7 +123,37 @@ int main(int argc, char* argv[]) {
     server srv(io_service, port, router, session::MakeSession);
 
     std::cout << "Server running on port " << port << "\n";
-    io_service.run();
+    
+    // Running the io_service with multiple threads
+    const unsigned int num_threads = std::max(2u, std::thread::hardware_concurrency());
+    Logger::log_info("Starting server with " + std::to_string(num_threads) + " threads");
+    
+    std::vector<std::thread> threads;
+    
+    // Creates worker threads (leaving one for main thread)
+    for (unsigned int i = 0; i < num_threads - 1; ++i) {
+        threads.emplace_back([&io_service]() {
+            try {
+                io_service.run();
+            } catch (const std::exception& e) {
+                Logger::log_error("Worker thread exception: " + std::string(e.what()));
+            }
+        });
+    }
+    
+    // Running io_service in main thread as well
+    try {
+        io_service.run();
+    } catch (const std::exception& e) {
+        Logger::log_error("Main thread exception: " + std::string(e.what()));
+    }
+    
+    // Waiting for all threads to finish
+    for (auto& thread : threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
   }
   catch (const std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";

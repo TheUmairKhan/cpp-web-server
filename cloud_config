@@ -6,6 +6,10 @@ port 80;
 location /echo EchoHandler {
 }
 
+location /sleep SleepHandler {
+    sleep_duration 5;
+}
+
 location /static StaticHandler {
     root ./var/www/static;
 }

@@ -2,7 +2,8 @@
 
 #include "request_handler.h"
 #include "echo_handler.h"     
-#include "static_handler.h"   
+#include "static_handler.h"
+#include "sleep_handler.h"   
 #include <gtest/gtest.h>
 #include <stdexcept>
 
@@ -125,4 +126,36 @@ TEST(HandlerRegistryTest, CreateHandlerReturnsDistinctInstances) {
   EXPECT_NE(a, b);
   delete a;
   delete b;
+}
+
+// -----------------------------------------------------------------------------
+// Sleep Handler Tests
+// -----------------------------------------------------------------------------
+
+// Test that SleepHandler is registered with the HandlerRegistry
+TEST(SleepHandlerRegistryTest, SleepHandlerIsRegistered) {
+  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(SleepHandler::kName));
+}
+
+// Test creating SleepHandler through registry
+TEST(SleepHandlerRegistryTest, CreateSleepHandlerViaRegistry) {
+  RequestHandler* raw = 
+    HandlerRegistry::CreateHandler(SleepHandler::kName, "/sleep", {});
+  ASSERT_NE(raw, nullptr);
+  
+  auto* h = dynamic_cast<SleepHandler*>(raw);
+  EXPECT_NE(h, nullptr);
+  delete raw;
+}
+
+// Test creating SleepHandler with parameters through registry
+TEST(SleepHandlerRegistryTest, CreateSleepHandlerWithParamsViaRegistry) {
+  std::unordered_map<std::string, std::string> params = {{"sleep_duration", "2"}};
+  RequestHandler* raw = 
+    HandlerRegistry::CreateHandler(SleepHandler::kName, "/sleep", params);
+  ASSERT_NE(raw, nullptr);
+  
+  auto* h = dynamic_cast<SleepHandler*>(raw);
+  EXPECT_NE(h, nullptr);
+  delete raw;
 }
