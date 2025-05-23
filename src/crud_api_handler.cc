@@ -119,7 +119,8 @@ Response CrudApiHandler::make_error_response(const Request& request, int status_
     "text/plain",
     message.size(),
     "close",
-    message
+    message,
+    CrudApiHandler::kName
   );
 }
 
@@ -130,7 +131,8 @@ Response CrudApiHandler::make_success_response(const Request& request, const std
     response_type,
     message.size(),
     "close",
-    message
+    message,
+    CrudApiHandler::kName
   );
 }
 

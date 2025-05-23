@@ -57,9 +57,9 @@ void session::handle_read(const boost::system::error_code& error,
 
     //Early 400 on malformed syntax
     if (!request.is_valid()) {
-        Response bad_response(request.get_version(), 400, "text/plain", /*content len=*/11, "close", "Bad Request"
+        Response bad_response("HTTP/1.1", 400, "text/plain", /*content len=*/11, "close", "Bad Request"
         );    
-        Logger::log_request(client_ip, request.get_method(), request.get_url(), 400);
+        Logger::log_request(client_ip, request.get_method(), request.get_url(), 400, bad_response.get_handler_type());
         boost::asio::async_write(
         socket_,
         boost::asio::buffer(bad_response.to_string()),
@@ -76,7 +76,8 @@ void session::handle_read(const boost::system::error_code& error,
         client_ip,
         request.get_method(),
         request.get_url(),
-        code
+        code,
+        response.get_handler_type()
     );
 
     out_buf_ = response.to_string();

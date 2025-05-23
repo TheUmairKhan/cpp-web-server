@@ -5,12 +5,14 @@ Response::Response(const std::string& version,
                    std::string content_type,
                    int content_length,
                    std::string connection,
-                   std::string body) :
+                   std::string body,
+                   std::string handler_type):
                    status_code_(status_code),
                    content_type_(content_type),
                    content_length_(content_length),
                    connection_(connection),
-                   body_(body)
+                   body_(body),
+                   handler_type_(handler_type)
 {
     status_line_ = version + " " + status_messages_.at(status_code);
 }
@@ -25,6 +27,8 @@ std::string Response::to_string() const {
 }
 
 int Response::get_status_code() const { return status_code_; }
+
+std::string Response::get_handler_type() const { return handler_type_; }
 
 const std::unordered_map<int, std::string> Response::status_messages_ = {
     {200, "200 OK"},

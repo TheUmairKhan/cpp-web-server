@@ -11,13 +11,17 @@ class Response {
                       std::string content_type,
                       int content_length,
                       std::string connection,
-                      std::string body);
+                      std::string body,
+                      std::string handler_type_ = "N/A");
 
     // Returns string of response
     std::string to_string() const;
 
     // Returns status code
     int get_status_code() const;
+
+    // Returns handler type
+    std::string get_handler_type() const;
 
   private:  
     int status_code_;
@@ -26,6 +30,7 @@ class Response {
     int content_length_;
     std::string connection_;
     std::string body_;
+    std::string handler_type_;
     static const std::unordered_map<int, std::string> status_messages_;
 };
 

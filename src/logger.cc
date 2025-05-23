@@ -9,6 +9,8 @@
 #include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/support/date_time.hpp>
 
+#include <sstream>
+
 namespace logging = boost::log;
 namespace attrs = boost::log::attributes;
 namespace expr = boost::log::expressions;
@@ -77,6 +79,21 @@ void Logger::log_connection(const std::string& client_ip) {
     Logger::log_info("New connection from " + client_ip);
 }
 
-void Logger::log_request(const std::string& client_ip, const std::string& method, const std::string& uri, int status_code) {
-    Logger::log_info(client_ip + " " + method + " " + uri + " -> " + std::to_string(status_code));
+// All logged request/response should be machine-parsable
+void Logger::log_request(   
+    const std::string& client_ip, 
+    const std::string& method, 
+    const std::string& uri, 
+    int status_code, 
+    const std::string& handler_type
+    ) {
+    std::ostringstream log_line;
+    log_line <<
+        "[ResponseMetrics] " <<
+        "request_ip:" << client_ip << " " <<
+        "request_method:" << method << " " <<
+        "request_path:" << uri << " " <<
+        "-> response_code:" << std::to_string(status_code) << " " <<
+        "handler_type:" << handler_type;
+    Logger::log_info(log_line.str());
 }

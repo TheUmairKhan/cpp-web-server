@@ -79,24 +79,43 @@ Request::Request(const std::string& request) {
   valid_request_ = true;
 }
 
-std::string Request::get_method() const { return method_; }
+std::string Request::get_method() const { 
+  if (!valid_request_) return "N/A";
+  return method_; 
+}
 
-std::string Request::get_url() const { return url_; }
+std::string Request::get_url() const { 
+  if (!valid_request_) return "N/A";
+  return url_; 
+}
 
-std::string Request::get_version() const { return http_version_; }
+std::string Request::get_version() const { 
+  if (!valid_request_) return "N/A";
+  return http_version_; 
+}
 
 std::string Request::get_header(const std::string& header_name) const { 
+  if (!valid_request_) return "N/A";
   if (headers_.find(header_name) != headers_.end())
     return headers_.at(header_name);
   return "";
 }
 
-std::string Request::get_body() const { return body_; }
+std::string Request::get_body() const { 
+  if (!valid_request_) return "N/A";
+  return body_; 
+}
 
-std::string Request::to_string() const { return raw_text_; }
+std::string Request::to_string() const { 
+  if (!valid_request_) return "N/A";
+  return raw_text_; 
+}
 
 bool Request::is_valid() const { return valid_request_; }
 
-int Request::length() const { return length_; }
+int Request::length() const { 
+  if (!valid_request_) return -1;
+  return length_;
+}
 
 

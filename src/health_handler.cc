@@ -18,5 +18,5 @@ HealthHandler::HealthHandler(std::string location)
 // Always returns a 200 OK response
 Response HealthHandler::handle_request(const Request& request) {
   std::string body = "OK";
-  return Response(request.get_version(), 200, "text/plain", body.length(), "close", body);
+  return Response(request.get_version(), 200, "text/plain", body.length(), "close", body, HealthHandler::kName);
 }

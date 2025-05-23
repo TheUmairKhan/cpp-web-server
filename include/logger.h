@@ -27,7 +27,7 @@ namespace Logger {
 
     //Request-specific logging functions
     void log_request(const std::string& client_ip, const std::string& method, 
-                    const std::string& uri, int status_code);
+                    const std::string& uri, int status_code, const std::string& handler_type);
     void log_connection(const std::string& client_ip);
 
 }

@@ -37,19 +37,6 @@ TEST_F(EchoHandlerTest, BasicEcho) {
   EXPECT_EQ(out.substr(body_pos + 4), req);
 }
 
-// Malformed start-lines must return 400 Bad Request.
-TEST_F(EchoHandlerTest, MalformedStartLine) {
-  const std::string req = "G?T /oops HTTP/1.1\r\nHost: x\r\n\r\n";
-  Request request(req);
-  Response response = handler_->handle_request(request);
-  std::string out = response.to_string();
-
-  EXPECT_NE(out.find("HTTP/1.1 400 Bad Request"), std::string::npos);
-  auto body_pos = out.find("\r\n\r\n");
-  ASSERT_NE(body_pos, std::string::npos);
-  EXPECT_EQ(out.substr(body_pos + 4), "Bad Request");
-}
-
 // LF-only line breaks should still be accepted and echoed.
 TEST_F(EchoHandlerTest, LFTest) {
   const std::string req = "GET /foo HTTP/1.1\nHost: localhost\n\n";

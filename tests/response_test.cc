@@ -5,7 +5,7 @@
 
 // Basic HTTP 200 OK response
 TEST(ResponseTest, Correct200Response) {
-    Response res("HTTP/1.1", 200, "text/html", 13, "close", "<h1>Hello</h1>");
+    Response res("HTTP/1.1", 200, "text/html", 13, "close", "<h1>Hello</h1>", "EchoHandler");
 
     std::string expected = 
         "HTTP/1.1 200 OK\r\n"
@@ -16,11 +16,12 @@ TEST(ResponseTest, Correct200Response) {
 
     EXPECT_EQ(res.to_string(), expected);
     EXPECT_EQ(res.get_status_code(), 200);
+    EXPECT_EQ(res.get_handler_type(), "EchoHandler");
 }
 
 // 404 Not Found response 
 TEST(ResponseTest, Correct404Response) {
-    Response res("HTTP/1.1", 404, "text/plain", 9, "keep-alive", "Not Found");
+    Response res("HTTP/1.1", 404, "text/plain", 9, "keep-alive", "Not Found", "StaticHandler");
 
     std::string expected = 
         "HTTP/1.1 404 Not Found\r\n"
@@ -30,7 +31,8 @@ TEST(ResponseTest, Correct404Response) {
         "Not Found";
 
     EXPECT_EQ(res.to_string(), expected);
-        EXPECT_EQ(res.get_status_code(), 404);
+    EXPECT_EQ(res.get_status_code(), 404);
+    EXPECT_EQ(res.get_handler_type(), "StaticHandler");
 }
 
 // 403 Forbidden with empty body
@@ -45,6 +47,7 @@ TEST(ResponseTest, Correct403Response) {
 
     EXPECT_EQ(res.to_string(), expected);
     EXPECT_EQ(res.get_status_code(), 403);
+    EXPECT_EQ(res.get_handler_type(), "N/A");
 }
 
 // 400 Bad Request
@@ -60,4 +63,5 @@ TEST(ResponseTest, Correct400Response) {
 
     EXPECT_EQ(res.to_string(), expected);
     EXPECT_EQ(res.get_status_code(), 400);
+    EXPECT_EQ(res.get_handler_type(), "N/A");
 }

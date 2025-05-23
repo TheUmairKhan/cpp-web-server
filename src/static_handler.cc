@@ -79,8 +79,7 @@ Response StaticHandler::handle_request(const Request& request) {
     if (!in) {
       // 404 Not Found
       std::string b = "404 Error: File not found";
-      return Response(request.get_version(), 404,
-                      "text/plain", b.size(), "close", b);
+      return Response(request.get_version(), 404, "text/plain", b.size(), "close", b, StaticHandler::kName);
     }
 
     // slurp the file
@@ -89,13 +88,11 @@ Response StaticHandler::handle_request(const Request& request) {
 
     auto ext = get_extension(path);
     auto mime = get_mime_type(ext);
-    return Response(request.get_version(), 200,
-                    mime, body.size(), "close", body);
+    return Response(request.get_version(), 200, mime, body.size(), "close", body, StaticHandler::kName);
   }
   catch (const std::runtime_error& e) {
     // 403 Forbidden on traversal or bad mount
     std::string msg = e.what();
-    return Response(request.get_version(), 403,
-                    "text/plain", msg.size(), "close", msg);
+    return Response(request.get_version(), 403, "text/plain", msg.size(), "close", msg, StaticHandler::kName);
   }
 }

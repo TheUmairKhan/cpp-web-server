@@ -22,6 +22,21 @@ TEST_F(RequestTest, ValidRequest) {
   EXPECT_EQ(request->get_header("Accept"), "*/*");
 }
 
+TEST_F(RequestTest, BadRequest) {
+  req = "bad\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  ASSERT_FALSE(request->is_valid());
+  EXPECT_EQ(request->get_method(), "N/A");
+  EXPECT_EQ(request->get_url(), "N/A");
+  EXPECT_EQ(request->get_version(), "N/A");
+  EXPECT_EQ(request->get_header("Host"), "N/A");
+  EXPECT_EQ(request->get_body(), "N/A");
+  EXPECT_EQ(request->to_string(), "N/A");
+  EXPECT_EQ(request->length(), -1);
+}
+
 TEST_F(RequestTest, BadRequestExtraSpaces) {
   req = "GET    /foo   HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
   request = std::make_unique<Request>(req);

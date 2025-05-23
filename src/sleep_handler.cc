@@ -39,5 +39,5 @@ Response SleepHandler::handle_request(const Request& request) {
     
     // Returns response
     std::string body = "Slept for " + std::to_string(sleep_duration_) + " seconds";
-    return Response(request.get_version(), 200, "text/plain", body.length(), "close", body);
+    return Response(request.get_version(), 200, "text/plain", body.length(), "close", body, SleepHandler::kName);
 }

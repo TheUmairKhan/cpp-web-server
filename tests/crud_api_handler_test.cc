@@ -463,7 +463,7 @@ TEST_F(CrudApiHandlerTest, InvalidUrlFormatReturns400) {
 }
 
 TEST_F(CrudApiHandlerTest, UnsupportedHttpMethodReturns500) {
-    std::string request_text = "PATCH /api/user/1 HTTP/1.1\r\n\r\n";
+    std::string request_text = "HEAD /api/user/1 HTTP/1.1\r\n\r\n";
     Request request(request_text);
     Response response = handler_->handle_request(request);
 
