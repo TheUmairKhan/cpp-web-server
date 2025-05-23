@@ -22,6 +22,14 @@ TEST_F(RequestTest, ValidRequest) {
   EXPECT_EQ(request->get_header("Accept"), "*/*");
 }
 
+TEST_F(RequestTest, BadRequestExtraSpaces) {
+  req = "GET    /foo   HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  ASSERT_FALSE(request->is_valid());
+}
+
 TEST_F(RequestTest, ValidRequestNewline) {
   req = "GET /foo HTTP/1.1\nHost: localhost:8080\nAccept: */*\n\n";
   request = std::make_unique<Request>(req);
@@ -50,8 +58,40 @@ TEST_F(RequestTest, RequestNoEnd) {
   EXPECT_EQ(request->get_header("Accept"), "*/*");
 }
 
+TEST_F(RequestTest, BadRequestNoMethod) {
+  req = "/foo HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  EXPECT_FALSE(request->is_valid());
+}
+
+TEST_F(RequestTest, BadRequestBadMethod) {
+  req = "HELLO /foo HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  EXPECT_FALSE(request->is_valid());
+}
+
+TEST_F(RequestTest, BadRequestNoURL) {
+  req = "GET HTTP/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  EXPECT_FALSE(request->is_valid());
+}
+
 TEST_F(RequestTest, BadRequestNoVersion) {
   req = "GET /foo\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  EXPECT_FALSE(request->is_valid());
+}
+
+TEST_F(RequestTest, BadRequestBadVersion) {
+  req = "GET /foo http/1.1\r\nHost: localhost:8080\r\nAccept: */*\r\n\r\n";
   request = std::make_unique<Request>(req);
 
   // Check fields

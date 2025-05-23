@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <vector>
+#include <set>
 
 bool request_complete(const std::string& in_buf) {
   // Simple heuristic: headers end with a blank line (\r\n\r\n).
@@ -10,13 +11,27 @@ bool request_complete(const std::string& in_buf) {
 }
 
 static void getLine(std::string& request, std::string& line) {
-    // Find first instance of \n 
-    auto eol= request.find("\n");
-    line = request.substr(0, eol);
-    // Don't include \r if line ends with \r\n
-    if (line.back() == '\r') line.pop_back();
-    // Remove line from request
-    request = request.substr(eol + 1);
+  // Find first instance of \n 
+  auto eol= request.find("\n");
+  line = request.substr(0, eol);
+  // Don't include \r if line ends with \r\n
+  if (line.back() == '\r') line.pop_back();
+  // Remove line from request
+  request = request.substr(eol + 1);
+}
+
+static bool isValidMethod(const std::string& method) {
+  static const std::set<std::string> supported_methods = {
+    "GET", "POST", "PUT", "DELETE", "HEAD"
+  };
+  return (supported_methods.find(method) != supported_methods.end());
+}
+
+static bool isValidVersion(const std::string& version) {
+  static const std::set<std::string> supported_versions = {
+    "HTTP/1.0", "HTTP/1.1"
+  };
+  return (supported_versions.find(version) != supported_versions.end());
 }
 
 Request::Request(const std::string& request) {
@@ -33,8 +48,11 @@ Request::Request(const std::string& request) {
   url_ = line_tokens[1];
   http_version_ = line_tokens[2]; 
 
+  // Check that method and version are valid
+  if (!isValidMethod(method_) || !isValidVersion(http_version_)) { valid_request_ = false; return; }
+
   // For remaining lines, map headers to their values
-  // If end of request, only remaining part will be \r\n or \n
+  // If end of request headers, only remaining part will be \r\n or \n
   while (req != "\r\n" && req != "\n" && !req.empty()) {
     getLine(req, line);
     if (line.empty()) break;
@@ -61,8 +79,6 @@ Request::Request(const std::string& request) {
   }
 
   valid_request_ = true;
-
-  
 }
 
 std::string Request::get_method() const { return method_; }
@@ -72,9 +88,9 @@ std::string Request::get_url() const { return url_; }
 std::string Request::get_version() const { return http_version_; }
 
 std::string Request::get_header(const std::string& header_name) const { 
-    if (headers_.find(header_name) != headers_.end())
-      return headers_.at(header_name);
-    return "";
+  if (headers_.find(header_name) != headers_.end())
+    return headers_.at(header_name);
+  return "";
 }
 
 std::string Request::get_body() const { return body_; }

@@ -227,7 +227,7 @@ def main() -> int:
                 Case("bad verb",
                      lambda p: raw(p,
                        f"BAD / HTTP/1.1\r\nHost: 127.0.0.1:{p}\r\n\r\n"),
-                     NOT_FOUND_404),
+                     BAD_REQUEST_400),
                 Case("static HTML file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/index.html"),
                     lambda _p: file_200(html_body, ctype="text/html")),

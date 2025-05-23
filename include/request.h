@@ -11,6 +11,10 @@ bool request_complete(const std::string& in_buf);
 // Line is stored in line and remaining request in request
 static void getLine(std::string& request, std::string& line);
 
+static bool isValidMethod(const std::string& method);
+
+static bool isValidVersion(const std::string& version);
+
 class Request {
   public:
     explicit Request(const std::string& request);
