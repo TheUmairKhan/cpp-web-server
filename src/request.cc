@@ -60,6 +60,10 @@ Request::Request(const std::string& request) {
     auto split = line.find(":");
     if (split == std::string::npos) { valid_request_ = false; return; }
     std::string header_name = line.substr(0, split);
+    // if header name has any spaces, request is invalid
+    if (header_name.find(" ") != std::string::npos) { valid_request_ = false; return; }
+    // if header is duplicated, request is invalid
+    if (headers_.find(header_name) != headers_.end()) { valid_request_ = false; return; }
     // if header value is empty after colon, i.e "" or " ", value set to empty string
     if (split + 2 >= line.length()) { headers_[header_name] = ""; continue; }
     headers_[header_name] = line.substr(split + 2); // Don't include space following colon

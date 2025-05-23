@@ -141,6 +141,22 @@ TEST_F(RequestTest, GoodRequestHeaderHasSpace) {
   EXPECT_EQ(request->get_header("Accept"), "text/html, application/xhtml+xml");
 }
 
+TEST_F(RequestTest, BadRequestHeaderNameHasSpace) {
+  req = "GET /foo HTTP/1.1\r\nHost: localhost:8080\r\n Bad: test\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  ASSERT_FALSE(request->is_valid());
+}
+
+TEST_F(RequestTest, BadRequestDuplicateHeader) {
+  req = "GET /foo HTTP/1.1\r\nBad: localhost:8080\r\nBad: test\r\n\r\n";
+  request = std::make_unique<Request>(req);
+
+  // Check fields
+  ASSERT_FALSE(request->is_valid());
+}
+
 // ---------------- request_complete unit tests ---------------
 // Test request_complete with complete request with \r\n\r\n
 TEST_F(RequestTest, RequestCompleteCRLF) {
