@@ -64,23 +64,3 @@ TEST_F(NotFoundHandlerTest, InvalidRequestStillReturns404) {
   // Should still be 404, not 400 Bad Request
   EXPECT_EQ(response.get_status_code(), 404);
 }
-
-// -----------------------------------------------------------------------------
-// Handler Registration Test
-// -----------------------------------------------------------------------------
-
-// Test that NotFoundHandler is registered with the HandlerRegistry
-TEST(NotFoundHandlerRegistryTest, NotFoundHandlerIsRegistered) {
-  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(NotFoundHandler::kName));
-}
-
-// Test creating NotFoundHandler through registry
-TEST(NotFoundHandlerRegistryTest, CreateNotFoundHandlerViaRegistry) {
-  RequestHandler* raw = 
-    HandlerRegistry::CreateHandler(NotFoundHandler::kName, "/", {});
-  ASSERT_NE(raw, nullptr);
-  
-  auto* h = dynamic_cast<NotFoundHandler*>(raw);
-  EXPECT_NE(h, nullptr);
-  delete raw;
-}

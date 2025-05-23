@@ -24,6 +24,7 @@
 #include "crud_api_handler.h"
 #include "not_found_handler.h"
 #include "sleep_handler.h"
+#include "health_handler.h"
 #include "handler_registry.h"
 
 using boost::asio::ip::tcp;

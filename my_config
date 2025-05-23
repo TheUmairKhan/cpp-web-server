@@ -22,5 +22,8 @@ location /api CrudApiHandler {
     root ../../www/api_data;
 }
 
+location /health HealthHandler {
+}
+
 location / NotFoundHandler {
 }

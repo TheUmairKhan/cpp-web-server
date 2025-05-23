@@ -4,6 +4,8 @@
 #include "echo_handler.h"     
 #include "static_handler.h"
 #include "sleep_handler.h"   
+#include "health_handler.h"
+#include "not_found_handler.h"
 #include <gtest/gtest.h>
 #include <stdexcept>
 
@@ -126,6 +128,38 @@ TEST(HandlerRegistryTest, CreateHandlerReturnsDistinctInstances) {
   EXPECT_NE(a, b);
   delete a;
   delete b;
+}
+
+// Test that HealthHandler is registered with the HandlerRegistry
+TEST(HandlerRegistryTest, HealthHandlerIsRegistered) {
+  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(HealthHandler::kName));
+}
+
+// Test creating HealthHandler through registry
+TEST(HandlerRegistryTest, CreateHealthHandlerViaRegistry) {
+  RequestHandler* raw = 
+    HandlerRegistry::CreateHandler(HealthHandler::kName, "/health", {});
+  ASSERT_NE(raw, nullptr);
+  
+  auto* h = dynamic_cast<HealthHandler*>(raw);
+  EXPECT_NE(h, nullptr);
+  delete raw;
+}
+
+// Test that NotFoundHandler is registered with the HandlerRegistry
+TEST(HandlerRegistryTest, NotFoundHandlerIsRegistered) {
+  EXPECT_TRUE(HandlerRegistry::HasHandlerFor(NotFoundHandler::kName));
+}
+
+// Test creating NotFoundHandler through registry
+TEST(HandlerRegistryTest, CreateNotFoundHandlerViaRegistry) {
+  RequestHandler* raw = 
+    HandlerRegistry::CreateHandler(NotFoundHandler::kName, "/", {});
+  ASSERT_NE(raw, nullptr);
+  
+  auto* h = dynamic_cast<NotFoundHandler*>(raw);
+  EXPECT_NE(h, nullptr);
+  delete raw;
 }
 
 // -----------------------------------------------------------------------------

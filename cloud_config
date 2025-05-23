@@ -22,5 +22,8 @@ location /api CrudApiHandler {
     root ./mnt/storage/crud;
 }
 
+location /health HealthHandler {
+}
+
 location / NotFoundHandler {
 }

@@ -48,6 +48,7 @@ add_library(echoserver_lib
   src/crud_api_handler.cc
   src/not_found_handler.cc
   src/sleep_handler.cc
+  src/health_handler.cc
   src/router.cc
   src/logger.cc
   src/handler_registry.cc
@@ -109,6 +110,7 @@ add_executable(unit_tests
   tests/not_found_handler_test.cc
   tests/sleep_handler_test.cc
   tests/multithreading_integration_test.cc
+  tests/health_handler_test.cc
   tests/router_test.cc
   tests/logger_test.cc
   tests/response_test.cc

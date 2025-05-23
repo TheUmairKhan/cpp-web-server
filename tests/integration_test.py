@@ -135,6 +135,14 @@ Connection: close
 
 404 Error: File not found""").replace("\r\n", "\n")
 
+OK_REQUEST_200 = textwrap.dedent("""\
+    HTTP/1.1 200 OK
+    Content-Type: text/plain
+    Content-Length: 2
+    Connection: close
+
+    OK""").replace("\r\n", "\n")
+
 # ───── testcase wrapper ──────────────────────────────────────────────────────
 @dataclass
 class Case:
@@ -188,6 +196,9 @@ def main() -> int:
                 root {data_root};
             }}
 
+            location /health HealthHandler {{
+            }}
+
             #Handle requests that don't match any other handler with 404
             location / NotFoundHandler {{
             }}
@@ -238,6 +249,9 @@ def main() -> int:
                 Case("Crud entity creation, retrieval, deletion",
                     lambda p: test_crud_sequence(f"http://127.0.0.1:{p}/api/test.json", json_body),
                     "400 Bad Request: ID does not exist"), 
+                Case("health check",
+                    lambda p: curl(f"http://127.0.0.1:{p}/health"),
+                    OK_REQUEST_200),
 
                 #Test paths that should fall through to the NotFoundHandler at '/'
                 Case("root path falls through to NotFoundHandler",
