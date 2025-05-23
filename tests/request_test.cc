@@ -156,22 +156,3 @@ TEST_F(RequestTest, BadRequestDuplicateHeader) {
   // Check fields
   ASSERT_FALSE(request->is_valid());
 }
-
-// ---------------- request_complete unit tests ---------------
-// Test request_complete with complete request with \r\n\r\n
-TEST_F(RequestTest, RequestCompleteCRLF) {
-  req = "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n";
-  EXPECT_TRUE(request_complete(req));
-}
-
-// Test request_complete with complete request with \r\n\r\n
-TEST_F(RequestTest, RequestCompleteLF) {
-  req = "GET / HTTP/1.1\nHost: localhost\n\n";
-  EXPECT_TRUE(request_complete(req));
-}
-
-// Test request_complete with incomplete request
-TEST_F(RequestTest, RequestIncomplete) {
-  req = "GET / HTTP/1.1\r\nHost: localhost\r\n";
-  EXPECT_FALSE(request_complete(req));
-}

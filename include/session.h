@@ -15,14 +15,13 @@ public:
 protected:
   explicit session(boost::asio::io_service& io_service, Router& router);
 
-  // Returns true if the request in in_buf is complete (termination sequence seen)
-  // and false otherwise
-  static bool request_complete(const std::string& in_buf);
-
   virtual void handle_read(const boost::system::error_code& error,
                   std::size_t bytes_transferred);
   
   virtual void handle_write(const boost::system::error_code& error);
+
+  // Returns true if the request in in_buf_ is complete and false otherwise
+  bool request_complete();
 
   boost::asio::ip::tcp::socket socket_;
   Router& router_;

@@ -4,12 +4,6 @@
 #include <vector>
 #include <set>
 
-bool request_complete(const std::string& in_buf) {
-  // Simple heuristic: headers end with a blank line (\r\n\r\n).
-  // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
-  return in_buf.find("\r\n\r\n") != std::string::npos || in_buf.find("\n\n") != std::string::npos;
-}
-
 static void getLine(std::string& request, std::string& line) {
   // Find first instance of \n 
   auto eol= request.find("\n");

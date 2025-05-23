@@ -4,9 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-// Helper function to determine whether collected string is a complete request
-bool request_complete(const std::string& in_buf);
-
 // Helper function to get next line of a request string
 // Line is stored in line and remaining request in request
 static void getLine(std::string& request, std::string& line);

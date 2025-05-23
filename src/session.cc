@@ -6,6 +6,7 @@
 
 #include <boost/bind.hpp>
 #include <string>
+#include <sstream>
 
 using boost::asio::ip::tcp;
 
@@ -19,10 +20,6 @@ session::session(boost::asio::io_service& io_service, Router& r)
 // Return the underlying socket so the acceptor can bind to it.
 tcp::socket& session::socket() {
   return socket_;
-}
-
-bool session::request_complete(const std::string& in_buf) {
-  return ::request_complete(in_buf);  // From request.h
 }
 
 void session::start() {
@@ -43,7 +40,7 @@ void session::handle_read(const boost::system::error_code& error,
 
     in_buf_.append(chunk_, bytes_transferred);
 
-    if (!request_complete(in_buf_)) {
+    if (!request_complete()) {
         socket_.async_read_some(
             boost::asio::buffer(chunk_, max_length),
             [this](const boost::system::error_code& err, std::size_t n) {
@@ -94,4 +91,53 @@ void session::handle_read(const boost::system::error_code& error,
 void session::handle_write(const boost::system::error_code& error) {
   // We’re done with this connection—close it either way.
   delete this;
+}
+
+bool session::request_complete() {
+  // Simple heuristic: headers end with a blank line (\r\n\r\n).
+  // Added || for \n\n termination for the netcat terminal, since their newline doesn't produce \r\n but \n instead.
+  auto header_end_pos = in_buf_.find("\r\n\r\n");
+  auto body_start_pos= header_end_pos;
+  if (header_end_pos != std::string::npos)
+    body_start_pos = header_end_pos + 4;
+  else {
+    header_end_pos = in_buf_.find("\n\n");
+    if (header_end_pos != std::string::npos) 
+      body_start_pos = header_end_pos + 2;
+    // header not completed yet
+    else {
+      // bytes_read += max_length;
+      return false;
+    }
+  }
+
+  // After headers, there may or may not be a body
+  // Expect a Content-Length header if request has a body
+  auto header = in_buf_.substr(0, body_start_pos);
+  std::size_t content_length = 0;
+  std::istringstream stream(header);
+  std::string line;
+  bool content_length_found = false;
+  while (std::getline(stream, line)) {
+    auto content_length_pos = line.find("Content-Length:");
+    if (content_length_pos != std::string::npos) {
+      content_length = std::stoull(line.substr(content_length_pos + 15));
+      content_length_found = true;
+      break;
+    }
+  }
+  // If Content-Length header not found, assumes that there is no body and simply returns that request is complete
+  // It is possible that a body still exists, however if there is no Content-Length header the session will not check
+  // if the entire body has been read
+  if (!content_length_found) return true;
+
+  // If the Content-Length header exists, if received body is shorter than expected, need to keep receiving
+  // If received body is larger than expected, stop receiving and resize to match expected length
+  auto body = in_buf_.substr(body_start_pos);
+  auto body_size = body.size();
+  if (body_size < content_length) return false;
+  else if (body_size > content_length) {
+    in_buf_.resize(in_buf_.size() - (body_size - content_length));
+  }
+  return true;
 }

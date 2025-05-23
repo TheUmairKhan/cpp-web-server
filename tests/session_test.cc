@@ -265,3 +265,157 @@ TEST_F(SessionTest, LargeChunkedWriteRequest) {
   EXPECT_EQ(body.size(), request_full.size());
   EXPECT_EQ(body, request_full);
 }
+
+// -----------------------------------------------------------------------------
+// LargeBodyRequest
+//
+// Stress test: send a request with a huge body, ensure that whole body is received
+// and echoed back
+// -----------------------------------------------------------------------------
+TEST_F(SessionTest, LargeBodyRequest) {
+  const size_t filler_size = 512;  //  Half size of session buffer
+  std::string random_filler; random_filler.reserve(filler_size);
+  for (size_t i = 0; i < filler_size; ++i)
+    random_filler.push_back(static_cast<char>((rand() % 94) + 33));
+
+  const size_t body_size = 1024;  // size of session buffer
+  std::string random_body; random_body.reserve(body_size);
+  for (size_t i = 0; i < body_size; ++i)
+    random_body.push_back(static_cast<char>((rand() % 94) + 33));
+
+  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
+  // of this request, which includes \r\n\r\n. The body following this will be split up
+  // due to its size of 1024 bytes.
+  std::string request_start =
+      "GET / HTTP/1.1\r\nContent-Length: " + 
+      std::to_string(body_size) +
+      "\r\nX-Filler: ";
+  std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
+
+  tcp::socket sock = SendRequest(request_full);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
+
+  // Verify echoed request matches original
+  auto body_pos = resp.find("\r\n\r\n");
+  ASSERT_NE(body_pos, std::string::npos);
+  std::string body = resp.substr(body_pos + 4);
+  EXPECT_EQ(body.size(), request_full.size());
+  EXPECT_EQ(body, request_full);
+}
+
+// -----------------------------------------------------------------------------
+// LargeBodyRequestNoLength
+//
+// Stress test: send a request with a huge body but no Content-Length, whole body
+// should not be echoed back
+// -----------------------------------------------------------------------------
+TEST_F(SessionTest, LargeBodyRequestNoLength) {
+  const size_t filler_size = 512;  //  Half size of session buffer
+  std::string random_filler; random_filler.reserve(filler_size);
+  for (size_t i = 0; i < filler_size; ++i)
+    random_filler.push_back(static_cast<char>((rand() % 94) + 33));
+
+  const size_t body_size = 1024;  // size of session buffer
+  std::string random_body; random_body.reserve(body_size);
+  for (size_t i = 0; i < body_size; ++i)
+    random_body.push_back(static_cast<char>((rand() % 94) + 33));
+
+  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
+  // of this request, which includes \r\n\r\n. The body following this will be split up
+  // due to its size of 1024 bytes.
+  std::string request_start =
+      "GET / HTTP/1.1\r\nX-Filler: ";
+  std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
+
+  tcp::socket sock = SendRequest(request_full);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
+
+  // Verify echoed request does not match original
+  // Only first 1024 bytes should be sent back
+  auto body_pos = resp.find("\r\n\r\n");
+  ASSERT_NE(body_pos, std::string::npos);
+  std::string body = resp.substr(body_pos + 4);
+  EXPECT_EQ(body.size(), 1024);
+  EXPECT_EQ(body, request_full.substr(0, 1024));
+}
+
+// -----------------------------------------------------------------------------
+// LargeBodyRequestSmallerLength
+//
+// Stress test: send a request with a huge body but Content-Length field less than
+// actual body size, ensure that whole body is echoed back
+// -----------------------------------------------------------------------------
+TEST_F(SessionTest, LargeBodyRequestSmallerLength) {
+  const size_t filler_size = 512;  //  Half size of session buffer
+  std::string random_filler; random_filler.reserve(filler_size);
+  for (size_t i = 0; i < filler_size; ++i)
+    random_filler.push_back(static_cast<char>((rand() % 94) + 33));
+
+  const size_t body_size = 1024;  // size of session buffer
+  std::string random_body; random_body.reserve(body_size);
+  for (size_t i = 0; i < body_size; ++i)
+    random_body.push_back(static_cast<char>((rand() % 94) + 33));
+
+  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
+  // of this request, which includes \r\n\r\n. The body following this will be split up
+  // due to its size of 1024 bytes.
+  std::string request_start =
+      "GET / HTTP/1.1\r\nContent-Length: " + 
+      std::to_string(body_size - 1) +
+      "\r\nX-Filler: ";
+  std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
+
+  tcp::socket sock = SendRequest(request_full);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  std::string resp = ReadResponse(sock, buf, ec);
+
+  // Verify echoed request matches original
+  auto body_pos = resp.find("\r\n\r\n");
+  ASSERT_NE(body_pos, std::string::npos);
+  std::string body = resp.substr(body_pos + 4);
+  EXPECT_EQ(body.size(), request_full.size() - 1);
+  EXPECT_EQ(body, request_full.substr(0, request_full.size() - 1));
+}
+
+// -----------------------------------------------------------------------------
+// LargeBodyRequestLargerLength
+//
+// Stress test: send a request with a huge body but Content-Length field more than
+// actual body size, check that server times out
+// -----------------------------------------------------------------------------
+TEST_F(SessionTest, LargeBodyRequestLargerLength) {
+  const size_t filler_size = 512;  //  Half size of session buffer
+  std::string random_filler; random_filler.reserve(filler_size);
+  for (size_t i = 0; i < filler_size; ++i)
+    random_filler.push_back(static_cast<char>((rand() % 94) + 33));
+
+  const size_t body_size = 1024;  // size of session buffer
+  std::string random_body; random_body.reserve(body_size);
+  for (size_t i = 0; i < body_size; ++i)
+    random_body.push_back(static_cast<char>((rand() % 94) + 33));
+
+  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
+  // of this request, which includes \r\n\r\n. The body following this will be split up
+  // due to its size of 1024 bytes.
+  std::string request_start =
+      "GET / HTTP/1.1\r\nContent-Length: " + 
+      std::to_string(body_size + 1) +
+      "\r\nX-Filler: ";
+  std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
+
+  tcp::socket sock = SendRequest(request_full);
+  boost::asio::streambuf buf;
+  boost::system::error_code ec;
+  bool got_response = false;
+
+  sock.async_read_some(buf.prepare(64), [&](auto err, std::size_t n){
+    if (!err && n > 0) { buf.commit(n); got_response = true; }
+  });
+  io_service_.run_for(std::chrono::milliseconds(50));
+  EXPECT_FALSE(got_response);
+}
