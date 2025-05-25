@@ -11,8 +11,8 @@ using boost::asio::ip::tcp;
 // Mock session class for testing server
 class MockSession : public session {
   public:
-    static MockSession* MakeMockSession(boost::asio::io_service& io_service, Router& r) {
-      return new MockSession(io_service, r);
+    static std::shared_ptr<MockSession> MakeMockSession(boost::asio::io_service& io_service, Router& r) {
+      return std::shared_ptr<MockSession>(new MockSession(io_service, r));
     }
 
     tcp::socket& socket() override {

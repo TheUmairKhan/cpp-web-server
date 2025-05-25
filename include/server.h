@@ -5,7 +5,7 @@
 #include "session.h"
 #include "router.h"
 
-using SessionFactory = std::function<session*(boost::asio::io_service&, Router&)>;
+using SessionFactory = std::function<std::shared_ptr<session>(boost::asio::io_service&, Router&)>;
 
 class server {
 public:
@@ -16,7 +16,7 @@ public:
 
 private:
   void start_accept();
-  void handle_accept(session* new_session,
+  void handle_accept(std::shared_ptr<session> new_session,
                      const boost::system::error_code& error);
 
   boost::asio::io_service& io_service_;

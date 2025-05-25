@@ -102,9 +102,8 @@ protected:
 // Verify that a fresh session has a closed socket before start().
 // -----------------------------------------------------------------------------
 TEST_F(SessionTest, SocketAccessor) {
-  session* s = session::MakeSession(io_service_, *router_);
+  std::shared_ptr<session> s = session::MakeSession(io_service_, *router_);
   EXPECT_FALSE(s->socket().is_open());
-  delete s;
 }
 
 // -----------------------------------------------------------------------------
@@ -308,7 +307,7 @@ TEST_F(SessionTest, LargeBodyRequest) {
 // -----------------------------------------------------------------------------
 // LargeBodyRequestNoLength
 //
-// Stress test: send a request with a huge body but no Content-Length, whole body
+// Stress test: send a request with a huge body but no Content-Length, body
 // should not be echoed back
 // -----------------------------------------------------------------------------
 TEST_F(SessionTest, LargeBodyRequestNoLength) {
@@ -325,9 +324,9 @@ TEST_F(SessionTest, LargeBodyRequestNoLength) {
   // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
   // of this request, which includes \r\n\r\n. The body following this will be split up
   // due to its size of 1024 bytes.
-  std::string request_start =
-      "GET / HTTP/1.1\r\nX-Filler: ";
-  std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
+  std::string request_header =
+      "GET / HTTP/1.1\r\nX-Filler: " + random_filler + "\r\n\r\n";
+  std::string request_full = request_header + random_body;
 
   tcp::socket sock = SendRequest(request_full);
   boost::asio::streambuf buf;
@@ -335,19 +334,19 @@ TEST_F(SessionTest, LargeBodyRequestNoLength) {
   std::string resp = ReadResponse(sock, buf, ec);
 
   // Verify echoed request does not match original
-  // Only first 1024 bytes should be sent back
+  // Anything after \r\n\r\n shouldn't be sent back
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body.size(), 1024);
-  EXPECT_EQ(body, request_full.substr(0, 1024));
+  EXPECT_EQ(body.size(), request_header.size());
+  EXPECT_EQ(body, request_header);
 }
 
 // -----------------------------------------------------------------------------
 // LargeBodyRequestSmallerLength
 //
 // Stress test: send a request with a huge body but Content-Length field less than
-// actual body size, ensure that whole body is echoed back
+// actual body size, ensure that only part of body comes back
 // -----------------------------------------------------------------------------
 TEST_F(SessionTest, LargeBodyRequestSmallerLength) {
   const size_t filler_size = 512;  //  Half size of session buffer
@@ -360,12 +359,11 @@ TEST_F(SessionTest, LargeBodyRequestSmallerLength) {
   for (size_t i = 0; i < body_size; ++i)
     random_body.push_back(static_cast<char>((rand() % 94) + 33));
 
-  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
-  // of this request, which includes \r\n\r\n. The body following this will be split up
-  // due to its size of 1024 bytes.
+  // Content-Length set to less than actual size
+  const size_t diff = 10;
   std::string request_start =
       "GET / HTTP/1.1\r\nContent-Length: " + 
-      std::to_string(body_size - 1) +
+      std::to_string(body_size - diff) +
       "\r\nX-Filler: ";
   std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
 
@@ -374,12 +372,12 @@ TEST_F(SessionTest, LargeBodyRequestSmallerLength) {
   boost::system::error_code ec;
   std::string resp = ReadResponse(sock, buf, ec);
 
-  // Verify echoed request matches original
+  // Verify echoed request matches part of original up to Content-Length
   auto body_pos = resp.find("\r\n\r\n");
   ASSERT_NE(body_pos, std::string::npos);
   std::string body = resp.substr(body_pos + 4);
-  EXPECT_EQ(body.size(), request_full.size() - 1);
-  EXPECT_EQ(body, request_full.substr(0, request_full.size() - 1));
+  EXPECT_EQ(body.size(), request_full.size() - diff);
+  EXPECT_EQ(body, request_full.substr(0, request_full.size() - diff));
 }
 
 // -----------------------------------------------------------------------------
@@ -399,12 +397,11 @@ TEST_F(SessionTest, LargeBodyRequestLargerLength) {
   for (size_t i = 0; i < body_size; ++i)
     random_body.push_back(static_cast<char>((rand() % 94) + 33));
 
-  // Session reads data in chunks of 1024 bytes, so it will read the first 1024 bytes
-  // of this request, which includes \r\n\r\n. The body following this will be split up
-  // due to its size of 1024 bytes.
+  // Content-Length set to more than actual size
+  const size_t diff = 10;
   std::string request_start =
       "GET / HTTP/1.1\r\nContent-Length: " + 
-      std::to_string(body_size + 1) +
+      std::to_string(body_size + diff) +
       "\r\nX-Filler: ";
   std::string request_full = request_start + random_filler + "\r\n\r\n" + random_body;
 
@@ -416,6 +413,7 @@ TEST_F(SessionTest, LargeBodyRequestLargerLength) {
   sock.async_read_some(buf.prepare(64), [&](auto err, std::size_t n){
     if (!err && n > 0) { buf.commit(n); got_response = true; }
   });
-  io_service_.run_for(std::chrono::milliseconds(50));
+  // Wait for 2 seconds (session times out with severity level warning after 5)
+  io_service_.run_for(std::chrono::seconds(2));
   EXPECT_FALSE(got_response);
 }

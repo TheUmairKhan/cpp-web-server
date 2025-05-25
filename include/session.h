@@ -4,9 +4,9 @@
 #include <boost/asio.hpp>
 #include "router.h"
 
-class session {
+class session : public std::enable_shared_from_this<session> {
 public:
-  static session* MakeSession(boost::asio::io_service& io_service, Router& router);
+  static std::shared_ptr<session> MakeSession(boost::asio::io_service& io_service, Router& router);
 
   virtual boost::asio::ip::tcp::socket& socket();
 
@@ -23,7 +23,15 @@ protected:
   // Returns true if the request in in_buf_ is complete and false otherwise
   bool request_complete();
 
+  // Timer functions
+  void start_timer();
+
+  void stop_timer();
+
+  void handle_timeout(const boost::system::error_code& error);
+
   boost::asio::ip::tcp::socket socket_;
+  boost::asio::steady_timer timer_;
   Router& router_;
   
   std::string in_buf_;

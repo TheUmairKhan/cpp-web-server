@@ -17,21 +17,20 @@ server::server(boost::asio::io_service& io_service,
 }
 
 void server::start_accept() {
-  session* new_session = session_factory_(io_service_, router_);
+  std::shared_ptr<session> new_session = session_factory_(io_service_, router_);
   acceptor_.async_accept(
     new_session->socket(),
     boost::bind(&server::handle_accept, this, new_session,
                 boost::asio::placeholders::error));
 }
 
-void server::handle_accept(session* new_session,
+void server::handle_accept(std::shared_ptr<session> new_session,
                            const boost::system::error_code& error) {
   if (!error) {
     Logger::log_info("Accepted connection from " + new_session->socket().remote_endpoint().address().to_string());
     new_session->start();
   } else {
     Logger::log_error("Accept error: " + error.message());
-    delete new_session;
   }
 
   // Continue accepting connections
