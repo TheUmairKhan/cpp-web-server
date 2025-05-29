@@ -35,6 +35,19 @@ find_package(Boost 1.50 REQUIRED COMPONENTS system log log_setup regex filesyste
 message(STATUS "Boost version: ${Boost_VERSION}")
 
 # ─────────────────────────────────────────────────────────────
+#  libcmark (Markdown Support)
+# ─────────────────────────────────────────────────────────────
+find_path(CMARK_INCLUDE_DIR cmark.h)
+find_library(CMARK_LIB cmark)
+
+if(NOT CMARK_INCLUDE_DIR OR NOT CMARK_LIB)
+    message(FATAL_ERROR "Could not find libcmark. Make sure libcmark-dev is installed.")
+endif()
+
+message(STATUS "libcmark found: ${CMARK_LIB}")
+message(STATUS "libcmark headers: ${CMARK_INCLUDE_DIR}")
+
+# ─────────────────────────────────────────────────────────────
 #  Echo‑server static library
 # ─────────────────────────────────────────────────────────────
 add_library(echoserver_lib
@@ -54,12 +67,14 @@ add_library(echoserver_lib
   src/handler_registry.cc
   src/real_filesystem.cc
   src/mock_filesystem.cc
+  src/markdown_converter.cc
 )
 
 
 target_include_directories(echoserver_lib
   PUBLIC                     # headers are part of the public interface
     ${CMAKE_SOURCE_DIR}/include
+    ${CMARK_INCLUDE_DIR}
 )
 
 target_compile_definitions(echoserver_lib
@@ -74,6 +89,7 @@ target_link_libraries(echoserver_lib
     Boost::log
     Boost::filesystem
     Boost::thread
+    ${CMARK_LIB}                    # Add cmark library for Markdown parsing, HTML conversion
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -115,11 +131,13 @@ add_executable(unit_tests
   tests/logger_test.cc
   tests/response_test.cc
   tests/handler_registry_test.cc
+  tests/markdown_converter_test.cc
 )
 
 target_include_directories(unit_tests
   PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMARK_INCLUDE_DIR}
 )
 
 target_link_libraries(unit_tests
@@ -129,6 +147,7 @@ target_link_libraries(unit_tests
     Boost::system
     Boost::log_setup
     Boost::log
+    ${CMARK_LIB}
 )
 
 # Let CTest discover and run the tests automatically
