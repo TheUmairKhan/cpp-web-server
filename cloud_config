@@ -27,3 +27,7 @@ location /health HealthHandler {
 
 location / NotFoundHandler {
 }
+
+location /markdown MarkdownHandler {
+    root ./var/www/markdown
+}
