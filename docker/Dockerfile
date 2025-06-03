@@ -6,6 +6,9 @@ FROM lebron2016x4:base as builder
 COPY . /usr/src/project
 WORKDIR /usr/src/project/build
 
+# Install libcmark dependencies for deployment stage
+RUN apt-get update && apt-get install -y libcmark-dev
+
 # Build and test
 RUN cmake ..
 RUN make
