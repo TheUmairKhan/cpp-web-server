@@ -25,9 +25,9 @@ location /api CrudApiHandler {
 location /health HealthHandler {
 }
 
-location / NotFoundHandler {
+location /docs MarkdownHandler {
+    root ./var/www/markdown;
 }
 
-location /markdown MarkdownHandler {
-    root ./var/www/markdown
+location / NotFoundHandler {
 }

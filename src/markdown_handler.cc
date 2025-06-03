@@ -1,20 +1,21 @@
-// src/static_handler.cc
-#include "static_handler.h"
+// src/markdown_handler.cc
+#include "markdown_handler.h"
+#include "logger.h"
 #include <fstream>
 #include <iterator>
 #include <cstring>
 
 // define the kName symbol
-constexpr char StaticHandler::kName[];
+constexpr char MarkdownHandler::kName[];
 
 // Factory invoked by HandlerRegistry
-RequestHandler* StaticHandler::Init(
+RequestHandler* MarkdownHandler::Init(
     const std::string& location,
     const std::unordered_map<std::string, std::string>& params) {
   auto it = params.find("root");
   if (it == params.end()) {
     throw std::runtime_error(
-      "StaticHandler missing 'root' parameter for location " + location);
+      "MarkdownHandler missing 'root' parameter for location " + location);
   }
 
   // canonicalize the root on disk
@@ -23,36 +24,22 @@ RequestHandler* StaticHandler::Init(
     ? fs::canonical(cfg)
     : fs::weakly_canonical(fs::read_symlink("/proc/self/exe").parent_path() / cfg);
 
-  return new StaticHandler(location, abs_root.string());
+  return new MarkdownHandler(location, abs_root.string());
 }
 
 // Constructor saves both pieces of information
-StaticHandler::StaticHandler(std::string url_prefix, std::string filesystem_root)
+MarkdownHandler::MarkdownHandler(std::string url_prefix, std::string filesystem_root)
   : prefix_(std::move(url_prefix)),
     fs_root_(std::move(filesystem_root)) {}
 
 // Extract file extension (including the dot), or "" if none
-std::string StaticHandler::get_extension(const std::string& path) const {
+std::string MarkdownHandler::get_extension(const std::string& path) const {
   auto pos = path.find_last_of('.');
   return (pos == std::string::npos ? "" : path.substr(pos));
 }
 
-// A small static table; falls back to octet-stream
-std::string StaticHandler::get_mime_type(const std::string& ext) const {
-  static const std::unordered_map<std::string, std::string> m = {
-    {".html","text/html"},{".htm","text/html"},{".txt","text/plain"},
-    {".css","text/css"},{".js","application/javascript"},
-    {".json","application/json"},{".jpg","image/jpeg"},
-    {".jpeg","image/jpeg"},{".png","image/png"},{".gif","image/gif"},
-    {".svg","image/svg+xml"},{".zip","application/zip"},
-    {".pdf","application/pdf"}, {".md", "text/markdown"}
-  };
-  auto it = m.find(ext);
-  return it==m.end() ? "application/octet-stream" : it->second;
-}
-
 // Build the real filesystem path, guard against traversal
-std::string StaticHandler::resolve_path(const std::string& url_path) const {
+std::string MarkdownHandler::resolve_path(const std::string& url_path) const {
   // strip off the URL prefix
   if (url_path.rfind(prefix_,0)!=0) {
     throw std::runtime_error("No static mount for this path");
@@ -72,14 +59,15 @@ std::string StaticHandler::resolve_path(const std::string& url_path) const {
 }
 
 // The actual request handler
-Response StaticHandler::handle_request(const Request& request) {
+Response MarkdownHandler::handle_request(const Request& request) {
   try {
     auto path = resolve_path(request.get_url());
     std::ifstream in(path, std::ios::binary);
     if (!in) {
       // 404 Not Found
-      std::string b = "404 Error: File not found";
-      return Response(request.get_version(), 404, "text/plain", b.size(), "close", b, StaticHandler::kName);
+      std::string b = "404: File not found";
+      Logger::log_error("MarkdownHandler error: " + b);
+      return Response(request.get_version(), 404, "text/plain", b.size(), "close", b, MarkdownHandler::kName);
     }
 
     // slurp the file
@@ -87,12 +75,24 @@ Response StaticHandler::handle_request(const Request& request) {
                       std::istreambuf_iterator<char>() };
 
     auto ext = get_extension(path);
-    auto mime = get_mime_type(ext);
-    return Response(request.get_version(), 200, mime, body.size(), "close", body, StaticHandler::kName);
+
+    // 400 Bad Request if request file is not .md
+    if (ext != ".md") {
+        std::string msg = "400 Bad Request: Non-Markdown file requested";
+        Logger::log_error("MarkdownHandler error: " + msg);
+        return Response(request.get_version(), 400, "text/plain", msg.size(), "close", msg, MarkdownHandler::kName);
+    }
+
+    // Convert body from .md to .html
+    std::string html_body = markdown::ConvertToHtml(body);
+    std::string full_html = markdown::WrapInHtmlTemplate(html_body);
+
+    return Response(request.get_version(), 200, "text/html", full_html.size(), "close", full_html, MarkdownHandler::kName);
   }
   catch (const std::runtime_error& e) {
     // 404 Not Found on traversal or bad mount to obscure file structure
     std::string msg = e.what();
-    return Response(request.get_version(), 404, "text/plain", msg.size(), "close", msg, StaticHandler::kName);
+    Logger::log_error("MarkdownHandler error: 404 Not Found: " + msg);
+    return Response(request.get_version(), 404, "text/plain", msg.size(), "close", msg, MarkdownHandler::kName);
   }
 }

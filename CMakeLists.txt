@@ -68,6 +68,7 @@ add_library(echoserver_lib
   src/real_filesystem.cc
   src/mock_filesystem.cc
   src/markdown_converter.cc
+  src/markdown_handler.cc
 )
 
 
