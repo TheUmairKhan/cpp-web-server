@@ -6,7 +6,7 @@ FROM lebron2016x4:base as builder
 COPY . /usr/src/project
 WORKDIR /usr/src/project/build
 
-# Install libcmark dependencies for deployment stage
+# Install libcmark dependencies in builder & deploy
 RUN apt-get update && apt-get install -y libcmark-dev
 
 # Build and test
@@ -18,6 +18,9 @@ RUN ctest --output-on_failure
 ### Deploy container ###
 # Define deploy stage
 FROM ubuntu:noble as deploy
+
+# Install libcmark dependencies in builder & deploy
+RUN apt-get update && apt-get install -y libcmark-dev
 
 COPY --from=builder /usr/src/project/build/bin/webserver .
 COPY --from=builder /usr/src/project/cloud_config .
