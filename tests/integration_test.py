@@ -5,6 +5,12 @@ import os, signal, socket, subprocess, sys, tempfile, textwrap, time, json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+import ctypes
+
+# ───── load libcmark ─────────────────────────────────────────────────────────
+cmark = ctypes.CDLL("libcmark.so")
+cmark.cmark_markdown_to_html.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int]
+cmark.cmark_markdown_to_html.restype = ctypes.c_char_p
 
 # ───── locate the compiled binary ────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
@@ -94,6 +100,27 @@ def test_crud_sequence(url: str, create_data: str) -> str:
     assert res_get2.stdout.find("400 Bad Request") == 0, f"GET failed: {res_get2.stderr}"
     return res_get2.stdout.replace("\r\n", "\n")
 
+def wrap_in_html_template(body):
+    return (
+        "<!DOCTYPE html>\n"
+        "<html lang=\"en\">\n"
+        "<head>\n"
+        "  <meta charset=\"UTF-8\">\n"
+        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+        "  <style>\n"
+        "    body { font-family: Arial, sans-serif; padding: 2rem; line-height: 1.6; }\n"
+        "    h1, h2, h3 { color: #333; }\n"
+        "    code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }\n"
+        "    pre { background: #f4f4f4; padding: 1rem; border-radius: 4px; overflow-x: auto; }\n"
+        "  </style>\n"
+        "  <title>Markdown Render</title>\n"
+        "</head>\n"
+        "<body>\n"
+        + body +
+        "\n</body>\n"
+        "</html>\n"
+    )
+
 # ───── expected replies ──────────────────────────────────────────────────────
 def echo_200(port: int) -> str:
     req = f"GET /echo HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"
@@ -168,14 +195,25 @@ def main() -> int:
         stat_root.mkdir()
         data_root = Path(tmp) / "crud"
         data_root.mkdir()
+        md_root = Path(tmp) / "markdown"
+        md_root.mkdir()
         txt_body = "Hello, integration!"
         html_body = "<html><body><h1>Test Page</h1></body></html>"
         jpg_bytes = b"\xff\xd8\xff\xe0" + b"FakeJPEG" + b"\xff\xd9"
         json_body = '{"message": "Hello, IntegrationWebserver!"}'
+        md_body = b"""# Integration Test
+
+        This is a test markdown file.
+
+        - 1
+        - 2"""
+        md_to_html = cmark.cmark_markdown_to_html(md_body, len(md_body), 0).decode('utf-8')
+        md_full_html = wrap_in_html_template(md_to_html)
 
         (stat_root / "hello.txt").write_text(txt_body)
         (stat_root / "index.html").write_text(html_body)
         (stat_root / "image.jpg").write_bytes(jpg_bytes)
+        (md_root / "test.md").write_bytes(md_body)
 
         cfg = Path(tmp) / "test.conf"
         cfg.write_text(textwrap.dedent(f"""\
@@ -197,6 +235,10 @@ def main() -> int:
             }}
 
             location /health HealthHandler {{
+            }}
+
+            location /markdown MarkdownHandler {{
+                root {md_root};
             }}
 
             #Handle requests that don't match any other handler with 404
@@ -249,6 +291,9 @@ def main() -> int:
                 Case("Crud entity creation, retrieval, deletion",
                     lambda p: test_crud_sequence(f"http://127.0.0.1:{p}/api/test.json", json_body),
                     "400 Bad Request: ID does not exist"), 
+                Case("markdown file",
+                    lambda p: curl(f"http://127.0.0.1:{p}/markdown/test.md"),
+                    lambda _p: file_200(md_full_html, ctype="text/html")),
                 Case("health check",
                     lambda p: curl(f"http://127.0.0.1:{p}/health"),
                     OK_REQUEST_200),
