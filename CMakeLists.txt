@@ -133,6 +133,7 @@ add_executable(unit_tests
   tests/response_test.cc
   tests/handler_registry_test.cc
   tests/markdown_converter_test.cc
+  tests/markdown_handler_test.cc
 )
 
 target_include_directories(unit_tests
