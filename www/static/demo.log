@@ -1,0 +1,5 @@
+[2025-06-03 12:42:15] INFO: Web server started on port 8080
+[2025-06-03 12:42:16] INFO: Received GET request for /static/hello.txt
+[2025-06-03 12:42:16] INFO: Served file hello.txt (Content-Length: 23)
+[2025-06-03 12:42:17] WARNING: Attempted access to missing file /static/bad.txt
+[2025-06-03 12:42:18] INFO: Web server shutting down

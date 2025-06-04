@@ -202,11 +202,14 @@ def main() -> int:
         jpg_bytes = b"\xff\xd8\xff\xe0" + b"FakeJPEG" + b"\xff\xd9"
         json_body = '{"message": "Hello, IntegrationWebserver!"}'
         md_body = b"""# Integration Test
+        
 
         This is a test markdown file.
 
         - 1
         - 2"""
+        log_body = "INFO: boot complete"
+        
         md_to_html = cmark.cmark_markdown_to_html(md_body, len(md_body), 0).decode('utf-8')
         md_full_html = wrap_in_html_template(md_to_html)
 
@@ -214,6 +217,7 @@ def main() -> int:
         (stat_root / "index.html").write_text(html_body)
         (stat_root / "image.jpg").write_bytes(jpg_bytes)
         (md_root / "test.md").write_bytes(md_body)
+        (stat_root / "test.log").write_text(log_body)
 
         cfg = Path(tmp) / "test.conf"
         cfg.write_text(textwrap.dedent(f"""\
@@ -265,14 +269,14 @@ def main() -> int:
                      echo_200),
                 Case("static file",
                      lambda p: curl(f"http://127.0.0.1:{p}/static/hello.txt"),
-                     lambda _p: file_200(txt_body)),
+                     lambda _p: file_200(txt_body, ctype="text/plain; charset=utf-8")),
                 Case("bad verb",
                      lambda p: raw(p,
                        f"BAD / HTTP/1.1\r\nHost: 127.0.0.1:{p}\r\n\r\n"),
                      BAD_REQUEST_400),
                 Case("static HTML file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/index.html"),
-                    lambda _p: file_200(html_body, ctype="text/html")),
+                    lambda _p: file_200(html_body, ctype="text/html; charset=utf-8")),
                 Case("static JPG file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/image.jpg", binary=True),
                     lambda _p: (
@@ -284,7 +288,7 @@ def main() -> int:
                     )),
                 Case("static file from different route",
                     lambda p: curl(f"http://127.0.0.1:{p}/public/hello.txt"),
-                    lambda _p: file_200(txt_body)),
+                    lambda _p: file_200(txt_body, ctype="text/plain; charset=utf-8")),
                 Case("unknown file",
                     lambda p: curl(f"http://127.0.0.1:{p}/static/missing"),
                     BAD_REQUEST_404),
@@ -293,7 +297,10 @@ def main() -> int:
                     "400 Bad Request: ID does not exist"), 
                 Case("markdown file",
                     lambda p: curl(f"http://127.0.0.1:{p}/markdown/test.md"),
-                    lambda _p: file_200(md_full_html, ctype="text/html")),
+                    lambda _p: file_200(md_full_html, ctype="text/html; charset=utf-8")),
+                Case("plain .log file without charset",
+                    lambda p: curl(f"http://127.0.0.1:{p}/static/test.log"),
+                    lambda _p: file_200(log_body, ctype="text/plain")), # Test for same MIME type of "text/plain" but extension isn't .txt. Should return "text/plain" only with no charset=utf-8
                 Case("health check",
                     lambda p: curl(f"http://127.0.0.1:{p}/health"),
                     OK_REQUEST_200),

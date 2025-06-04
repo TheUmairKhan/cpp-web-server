@@ -87,7 +87,7 @@ Response MarkdownHandler::handle_request(const Request& request) {
     std::string html_body = markdown::ConvertToHtml(body);
     std::string full_html = markdown::WrapInHtmlTemplate(html_body);
 
-    return Response(request.get_version(), 200, "text/html", full_html.size(), "close", full_html, MarkdownHandler::kName);
+    return Response(request.get_version(), 200, "text/html; charset=utf-8", full_html.size(), "close", full_html, MarkdownHandler::kName);
   }
   catch (const std::runtime_error& e) {
     // 404 Not Found on traversal or bad mount to obscure file structure

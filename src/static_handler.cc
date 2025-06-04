@@ -45,7 +45,8 @@ std::string StaticHandler::get_mime_type(const std::string& ext) const {
     {".json","application/json"},{".jpg","image/jpeg"},
     {".jpeg","image/jpeg"},{".png","image/png"},{".gif","image/gif"},
     {".svg","image/svg+xml"},{".zip","application/zip"},
-    {".pdf","application/pdf"}, {".md", "text/markdown"}
+    {".pdf","application/pdf"}, {".md", "text/markdown"},
+    {".log", "text/plain"}
   };
   auto it = m.find(ext);
   return it==m.end() ? "application/octet-stream" : it->second;
@@ -88,6 +89,14 @@ Response StaticHandler::handle_request(const Request& request) {
 
     auto ext = get_extension(path);
     auto mime = get_mime_type(ext);
+
+    // Update mime only for .txt and .html for UTF-8 encoding
+    if(ext == ".html"){
+      mime = "text/html; charset=utf-8";
+    } else if (ext == ".txt"){
+      mime = "text/plain; charset=utf-8";
+    }
+
     return Response(request.get_version(), 200, mime, body.size(), "close", body, StaticHandler::kName);
   }
   catch (const std::runtime_error& e) {
