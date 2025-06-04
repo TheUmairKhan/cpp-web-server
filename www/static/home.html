@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>lebron2016x4 Web Server</title>
+</head>
+<body>
+  <h1>Welcome to lebron2016x4 Web Server</h1>
+  <p>This full-featured HTTP server was built entirely from scratch in modern C++ using a modular architecture and SOLID design principles. Key capabilities include:</p>
+
+  <ul>
+    <li><strong>Custom-built routing system</strong> with longest-prefix matching and dynamic handler dispatching</li>
+    <li><strong>Support for multiple request handlers</strong>, including:
+      <ul>
+        <li><code>EchoHandler</code> - Reflects request data for debugging</li>
+        <li><code>StaticHandler</code> - Serves static files like HTML, images, and text</li>
+        <li><code>CrudApiHandler</code> - File-based JSON API for Create, Read, Update, Delete</li>
+        <li><code>MarkdownHandler</code> - Parses and converts Markdown to HTML using <code>libcmark</code></li>
+        <li><code>HealthHandler</code> - Reports server health status</li>
+        <li><code>SleepHandler</code> - Simulates delayed responses (e.g., sleep 5 seconds)</li>
+        <li><code>NotFoundHandler</code> - Custom 404 handler for unmatched routes</li>
+      </ul>
+    </li>
+    <li><strong>Markdown-to-HTML support</strong> using <code>libcmark</code>, dynamically linked and validated via CMake</li>
+    <li><strong>Containerized with Docker</strong> - Multi-stage build for test + deployment with isolated dependencies</li>
+    <li><strong>Hosted on Google Cloud Platform</strong> with VM-based deployment and firewall configuration</li>
+    <li><strong>CI/CD Ready</strong> - Integrated with Cloud Build for seamless updates</li>
+    <li><strong>Thoroughly tested</strong> with GoogleTest for C++ unit tests and Python for integration testing</li>
+    <li><strong>Comprehensive logging</strong> using <code>Boost.Log</code> for debugging and observability</li>
+  </ul>
+
+  <h2>📚 Documentation</h2>
+  <ul>
+    <li><a href="/docs/demo.md">README: Project Overview</a></li>
+    <li><a href="/docs/api.md">API Documentation</a></li>
+    <li><a href="/docs/index.md">Markdown Rendering Demo</a></li>
+  </ul>
+
+  <h2>🗂 Static File Demos</h2>
+  <ul>
+    <li><a href="/static/index.html">Static HTML File</a></li>
+    <li><a href="/static/demo.jpg">Image File</a></li>
+    <li><a href="/static/demo.zip">ZIP Archive</a></li>
+    <li><a href="/static/demo.txt">Text File</a></li>
+  </ul>
+
+  <h2>🔧 CRUD API</h2>
+  <p>This endpoint supports file operations using HTTP methods. Interact using <code>curl</code>, Postman, or custom clients:</p>
+  <ul>
+    <li><code>GET /api/&lt;filename&gt;</code> - Retrieve file contents</li>
+    <li><code>POST /api/&lt;filename&gt;</code> - Create a new file</li>
+    <li><code>PUT /api/&lt;filename&gt;</code> - Overwrite an existing file</li>
+    <li><code>DELETE /api/&lt;filename&gt;</code> - Delete a file</li>
+  </ul>
+
+  <h2>⚙️ Other Handlers</h2>
+  <ul>
+    <li><a href="/echo">EchoHandler</a> - Returns your request in the response body</li>
+    <li><a href="/sleep">SleepHandler</a> - Simulates a 5-second delay</li>
+    <li><a href="/health">HealthHandler</a> - Returns 200 OK if server is healthy</li>
+    <li><a href="/">NotFoundHandler</a> - Any unmatched request will trigger the NotFoundHandler (404)</li>
+  </ul>
+</body>
+</html>
