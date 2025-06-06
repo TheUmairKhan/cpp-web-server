@@ -34,6 +34,9 @@ private:
   // The absolute filesystem root we were configured with.
   std::string fs_root_;
 
+  Response handle_get(const Request& request);
+  Response handle_post(const Request& request);
+
   // helpers
   std::string get_extension(const std::string& path) const;
   std::string resolve_path(const std::string& url_path) const;

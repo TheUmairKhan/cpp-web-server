@@ -121,7 +121,7 @@ TEST_F(MarkdownHandlerTest, NonMarkdownExtensionReturns400) {
     // Assert that it returns "400 Bad Request" and not "200" or "404"
     EXPECT_NE(resp_str.find("HTTP/1.1 400 Bad Request"), std::string::npos);
     EXPECT_EQ(resp_str.find("Content-Type: text/html"), std::string::npos)
-        << "Should not serve non‐MD as HTML";
+        << "Should not serve non-MD as HTML";
 }
 
 //
@@ -172,3 +172,51 @@ TEST_F(MarkdownHandlerTest, MalformedUrlReturns404) {
     EXPECT_NE(resp2.find("HTTP/1.1 404 Not Found"), std::string::npos);
 }
 
+//
+// 7) Post request -> 200
+//
+TEST_F(MarkdownHandlerTest, PostReturnsHTML) {
+    std::string header = "POST /markdown HTTP/1.1\r\nContent-Type: text/markdown\r\n\r\n";
+    std::string body = "# Unit Test\n"
+                        "This is a test markdown file.\n"
+                        "- 1\n"
+                        "- 2";
+    Request request(header + body);
+    Response response = handler_->handle_request(request);
+    std::string resp_str = response.to_string();
+    auto body_pos = resp_str.find("\r\n\r\n");
+    auto response_body = resp_str.substr(body_pos + 4);
+    auto expected_body =    markdown::WrapInHtmlTemplate(
+                                    markdown::ConvertToHtml(body));
+
+    EXPECT_NE(resp_str.find("HTTP/1.1 200 OK"), std::string::npos);
+    EXPECT_NE(resp_str.find("Content-Type: text/html"), std::string::npos);
+    EXPECT_EQ(response_body, expected_body);
+}
+
+//
+// 8) Post request with bad content-type -> 400
+//
+TEST_F(MarkdownHandlerTest, PostWithBadType) {
+    std::string header = "POST /markdown HTTP/1.1\r\nContent-Type: text/html\r\n\r\n";
+    std::string body = "# Unit Test\n"
+                        "This is a test markdown file.\n"
+                        "- 1\n"
+                        "- 2";
+    Request request(header + body);
+    Response response = handler_->handle_request(request);
+    std::string resp_str = response.to_string();
+    
+    EXPECT_NE(resp_str.find("HTTP/1.1 400 Bad Request"), std::string::npos);
+}
+
+//
+// 9) Unsupported put request -> 400
+//
+TEST_F(MarkdownHandlerTest, BadMethod) {
+    Request request("PUT /markdown HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    Response response = handler_->handle_request(request);
+    std::string resp_str = response.to_string();
+
+    EXPECT_NE(resp_str.find("HTTP/1.1 400 Bad Request"), std::string::npos);
+}

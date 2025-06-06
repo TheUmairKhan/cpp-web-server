@@ -60,6 +60,22 @@ std::string MarkdownHandler::resolve_path(const std::string& url_path) const {
 
 // The actual request handler
 Response MarkdownHandler::handle_request(const Request& request) {
+  auto method = request.get_method();
+
+  if (method == "GET") {
+    return handle_get(request);
+  }
+  else if (method == "POST") {
+    return handle_post(request);
+  }
+  
+  // Unsupported method
+  std::string b = "400 Bad Request: Unsupported method";
+  Logger::log_error("MarkdownHandler error: " + b);
+  return Response(request.get_version(), 400, "text/plain", b.size(), "close", b, MarkdownHandler::kName);
+}
+
+Response MarkdownHandler::handle_get(const Request& request) {
   try {
     auto path = resolve_path(request.get_url());
     std::ifstream in(path, std::ios::binary);
@@ -82,6 +98,33 @@ Response MarkdownHandler::handle_request(const Request& request) {
         Logger::log_error("MarkdownHandler error: " + msg);
         return Response(request.get_version(), 400, "text/plain", msg.size(), "close", msg, MarkdownHandler::kName);
     }
+
+    // Convert body from .md to .html
+    std::string html_body = markdown::ConvertToHtml(body);
+    std::string full_html = markdown::WrapInHtmlTemplate(html_body);
+
+    return Response(request.get_version(), 200, "text/html; charset=utf-8", full_html.size(), "close", full_html, MarkdownHandler::kName);
+  }
+  catch (const std::runtime_error& e) {
+    // 404 Not Found on traversal or bad mount to obscure file structure
+    std::string msg = e.what();
+    Logger::log_error("MarkdownHandler error: 404 Not Found: " + msg);
+    return Response(request.get_version(), 404, "text/plain", msg.size(), "close", msg, MarkdownHandler::kName);
+  }
+}
+
+Response MarkdownHandler::handle_post(const Request& request) {
+  try {
+    // ensure that content type is markdown
+    auto content_type = request.get_header("Content-Type");
+    if (content_type != "text/markdown") {
+      std::string msg = "400 Bad Request: Post received non-Markdown content";
+      Logger::log_error("MarkdownHandler error: " + msg);
+      return Response(request.get_version(), 400, "text/plain", msg.size(), "close", msg, MarkdownHandler::kName);
+    }
+
+    // request body is markdown
+    auto body = request.get_body();
 
     // Convert body from .md to .html
     std::string html_body = markdown::ConvertToHtml(body);
