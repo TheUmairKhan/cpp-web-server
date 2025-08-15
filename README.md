@@ -1,3 +1,83 @@
+## Project Overview
+
+This project is a **custom C++ web server** designed for extensibility, performance, and maintainability. It implements a modular request-handling architecture with dynamic route configuration and supports both static and dynamic content delivery. Built with **Boost.Asio** for asynchronous networking, **CMake** for builds, and **Docker** for containerization, it is deployed using **Google Cloud’s managed build and deployment services** for scalable hosting. The design follows clean architecture principles to keep core logic independent of specific handlers or configurations.
+
+The server supports:
+
+- **Static file serving** for general website content
+- **Dynamic request handling** through pluggable modules (`EchoHandler`, `CRUDHandler`, `MarkdownHandler`)
+- **Markdown-to-HTML rendering** for `.md` files on the fly
+- **Nginx-style configuration parsing** for easy route and handler setup
+- **Handler registry system** enabling seamless addition of new request types
+- **Security measures** including directory traversal protection
+- **Comprehensive testing** with GoogleTest and Python integration tests
+- **Cloud-ready deployment** with Docker and Google Cloud for consistent local and production environments
+
+
+---
+
+## Development Timeline
+
+**Initial Static Web Server Core**  
+- Built a minimal C++ HTTP server supporting GET requests and serving static files.  
+- Implemented HTTP request parsing, response formatting, and basic static routing.  
+- Added unit tests for HTTP parsing and response generation.
+
+**Modular Request Handling**  
+- Refactored architecture to allow **pluggable request handlers**.  
+- Added an `EchoHandler` for dynamic responses.  
+- Integrated an **Nginx-style configuration parser** for defining routes and handler mappings.
+
+**CRUD Functionality**  
+- Implemented `CRUDHandler` for Create, Read, Update, and Delete operations using JSON storage.  
+- Added validation for paths and request formats.  
+- Expanded test coverage to ensure CRUD correctness.
+
+**Advanced Configuration & Multi-Route Support**  
+- Extended configuration parsing to support multiple routes with parameters.  
+- Improved error handling and logging for misconfigurations.  
+- Added tests for route parsing logic.
+
+**Registry-Based Handler System**  
+- Developed a **`HandlerRegistry`** for dynamic handler registration and instantiation.  
+- Enhanced maintainability by removing hardcoded handler references.  
+- Added unit tests for registry lookup and handler lifecycle.
+
+**Markdown Rendering**  
+- Built a `MarkdownHandler` to dynamically convert `.md` files into HTML.  
+- Integrated a Markdown parsing library for content transformation.  
+- Verified correct content-type handling and HTML output.
+
+**Robustness & Security Enhancements**  
+- Implemented **directory traversal protection** to prevent unauthorized file access.  
+- Strengthened HTTP parsing against malformed requests.  
+- Enhanced error responses for invalid inputs.
+
+**Comprehensive Testing & Continuous Integration**  
+- Achieved high test coverage using GoogleTest and Python integration tests.  
+- Configured CI pipelines for automated builds and tests.  
+- Validated concurrency safety and handler correctness under stress.
+
+**Deployment & Containerization**  
+- Containerized server with Docker for reproducible local and cloud deployment.  
+- Streamlined build process with CMake inside containers.  
+- Managed build and deployment through **Google Cloud**, leveraging container orchestration for scalable deployment.  
+- Delivered production-ready configuration and deployment scripts.
+
+---
+
+## Skills & Technologies Demonstrated
+
+- **Programming Languages:** C++17, Python  
+- **Networking:** Boost.Asio (asynchronous I/O), HTTP protocol implementation  
+- **Architecture & Design:** Modular request handling, handler registry pattern, clean architecture principles  
+- **Configuration Management:** Nginx-style route parsing, dynamic handler registration  
+- **Security:** Directory traversal protection, robust HTTP parsing  
+- **Testing & QA:** GoogleTest, Python integration testing, CI/CD pipelines  
+- **Build & Deployment:** CMake, Docker containerization, **Google Cloud managed build and deployment**, production deployment workflows  
+- **Content Processing:** Markdown-to-HTML rendering using parsing libraries
+
+
 # Project Structure
 **Basic Overview:**
 
